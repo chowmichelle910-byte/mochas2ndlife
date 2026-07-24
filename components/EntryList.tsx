@@ -12,7 +12,7 @@ export default function EntryList({
 }) {
   if (entries.length === 0) {
     return (
-      <div className="rounded-2xl bg-white p-6 text-center text-sm text-stone-400 shadow-sm">
+      <div className="rounded-3xl bg-white p-6 text-center text-sm text-stone-400 shadow-sm">
         這天還沒有紀錄，新增第一筆吧！
       </div>
     );
@@ -29,7 +29,7 @@ export default function EntryList({
         return (
           <li
             key={entry.id}
-            className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
+            className="flex items-center gap-3 rounded-3xl bg-white p-3 shadow-sm"
           >
             <span className={`flex h-9 w-9 items-center justify-center rounded-full text-lg ${meta.color}`}>
               {meta.emoji}

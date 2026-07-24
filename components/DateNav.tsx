@@ -12,11 +12,11 @@ export default function DateNav({
   const isToday = dateKey === toDateKey(new Date());
 
   return (
-    <div className="flex items-center justify-between rounded-2xl bg-white px-3 py-2 shadow-sm">
+    <div className="flex items-center justify-between rounded-3xl bg-white px-3 py-2 shadow-sm">
       <button
         type="button"
         aria-label="前一天"
-        className="rounded-full px-3 py-1 text-lg text-amber-700 hover:bg-amber-50"
+        className="rounded-full px-3 py-1 text-lg text-orange-500 hover:bg-orange-50"
         onClick={() => onChange(addDays(dateKey, -1))}
       >
         ←
@@ -28,7 +28,7 @@ export default function DateNav({
         {!isToday && (
           <button
             type="button"
-            className="text-xs text-amber-600 underline underline-offset-2"
+            className="text-xs text-orange-500 underline underline-offset-2"
             onClick={() => onChange(toDateKey(new Date()))}
           >
             回到今天
@@ -38,7 +38,7 @@ export default function DateNav({
       <button
         type="button"
         aria-label="後一天"
-        className="rounded-full px-3 py-1 text-lg text-amber-700 hover:bg-amber-50 disabled:opacity-30"
+        className="rounded-full px-3 py-1 text-lg text-orange-500 hover:bg-orange-50 disabled:opacity-30"
         onClick={() => onChange(addDays(dateKey, 1))}
         disabled={isToday}
       >

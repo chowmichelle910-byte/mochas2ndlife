@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { dateKeyToRange, toDateKey } from "@/lib/date";
-import { Entry, EntryInput } from "@/lib/types";
+import { Entry, EntryInput, EntryType } from "@/lib/types";
+import PetProfile from "@/components/PetProfile";
 import DateNav from "@/components/DateNav";
-import SummaryCards from "@/components/SummaryCards";
-import EntryForm from "@/components/EntryForm";
+import TodayGrid from "@/components/TodayGrid";
+import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
 
 export default function Dashboard() {
@@ -14,6 +15,7 @@ export default function Dashboard() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addingType, setAddingType] = useState<EntryType | null>(null);
 
   const loadEntries = useCallback(async (key: string) => {
     setLoading(true);
@@ -59,10 +61,11 @@ export default function Dashboard() {
 
   return (
     <main className="flex flex-col gap-4">
-      <header className="text-center">
-        <h1 className="text-2xl font-bold text-amber-800">🐾 貓咪健康紀錄</h1>
-        <p className="text-sm text-stone-500">紀錄吃飯、喝水、尿尿與便便狀況</p>
-      </header>
+      <h1 className="flex items-center justify-center gap-2 py-1 text-lg font-semibold text-stone-700">
+        🐾 貓咪健康紀錄
+      </h1>
+
+      <PetProfile />
 
       <DateNav dateKey={dateKey} onChange={setDateKey} />
 
@@ -72,16 +75,25 @@ export default function Dashboard() {
         </div>
       )}
 
-      <SummaryCards entries={entries} />
+      <TodayGrid entries={entries} onAdd={setAddingType} />
 
-      <EntryForm onSubmit={handleAdd} />
+      <div>
+        <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">紀錄列表</h2>
+        {loading ? (
+          <div className="rounded-2xl bg-white p-6 text-center text-sm text-stone-400 shadow-sm">
+            載入中...
+          </div>
+        ) : (
+          <EntryList entries={entries} onDelete={handleDelete} />
+        )}
+      </div>
 
-      {loading ? (
-        <div className="rounded-2xl bg-white p-6 text-center text-sm text-stone-400 shadow-sm">
-          載入中...
-        </div>
-      ) : (
-        <EntryList entries={entries} onDelete={handleDelete} />
+      {addingType && (
+        <AddEntrySheet
+          type={addingType}
+          onClose={() => setAddingType(null)}
+          onSubmit={handleAdd}
+        />
       )}
     </main>
   );
