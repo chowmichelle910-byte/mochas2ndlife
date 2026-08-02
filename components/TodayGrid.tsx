@@ -9,7 +9,10 @@ function summaryFor(entries: Entry[], type: EntryType): string {
   if (matches.length === 0) return "-";
 
   const meta = ENTRY_META[type];
-  if (type === "poop") return `${matches.length} 次`;
+  if (type === "poop" || type === "pee") {
+    const totalCount = matches.reduce((sum, e) => sum + (e.amount ?? 1), 0);
+    return `${totalCount} 次`;
+  }
 
   const total = matches.reduce((sum, e) => sum + (e.amount ?? 0), 0);
   return `${total} ${meta.unit} · ${matches.length} 次`;

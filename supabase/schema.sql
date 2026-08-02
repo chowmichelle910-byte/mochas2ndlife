@@ -87,3 +87,22 @@ create policy "settings public insert" on settings for insert with check (true);
 
 drop policy if exists "settings public update" on settings;
 create policy "settings public update" on settings for update using (true);
+
+-- 食物種類快捷選項（例如「皇家乾糧」），使用者可以自己新增
+
+create table if not exists food_brands (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table food_brands enable row level security;
+
+drop policy if exists "food_brands public read" on food_brands;
+create policy "food_brands public read" on food_brands for select using (true);
+
+drop policy if exists "food_brands public insert" on food_brands;
+create policy "food_brands public insert" on food_brands for insert with check (true);
+
+drop policy if exists "food_brands public update" on food_brands;
+create policy "food_brands public update" on food_brands for update using (true);

@@ -130,7 +130,7 @@ export default function PetProfile() {
             type="date"
             value={homeDateInput}
             onChange={(e) => setHomeDateInput(e.target.value)}
-            className="flex-1 rounded-lg border border-stone-200 px-2 py-1.5 text-sm focus:border-orange-400 focus:outline-none"
+            className="flex-1 rounded-lg border border-stone-200 px-2 py-1.5 text-base focus:border-orange-400 focus:outline-none"
           />
           <button
             type="button"

@@ -80,10 +80,6 @@ export default function Dashboard() {
 
       <PushReminderToggle />
 
-      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
-
-      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
-
       <DateNav dateKey={dateKey} onChange={setDateKey} />
 
       {error && (
@@ -104,6 +100,10 @@ export default function Dashboard() {
           <EntryList entries={entries} onDelete={handleDelete} />
         )}
       </div>
+
+      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
+
+      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
 
       {addingType && (
         <AddEntrySheet
