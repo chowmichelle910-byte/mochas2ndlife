@@ -1,14 +1,19 @@
 -- 貓咪健康紀錄 schema
--- 在 Supabase 專案的 SQL Editor 貼上並執行整份檔案
+-- 在 Supabase 專案的 SQL Editor 貼上並執行整份檔案（重複執行也安全，可用來更新舊的資料庫）
 
 create table if not exists entries (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('food', 'water', 'pee', 'poop')),
+  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea')),
   amount numeric,
   note text,
   occurred_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
+
+-- 如果資料表是舊版建立的（沒有 'flea' 這個 type），把限制條件更新成最新版本。
+alter table entries drop constraint if exists entries_type_check;
+alter table entries add constraint entries_type_check
+  check (type in ('food', 'water', 'pee', 'poop', 'flea'));
 
 create index if not exists entries_occurred_at_idx on entries (occurred_at desc);
 
@@ -24,3 +29,43 @@ create policy "public insert" on entries for insert with check (true);
 
 drop policy if exists "public delete" on entries;
 create policy "public delete" on entries for delete using (true);
+
+-- 除蟲藥推播提醒用的資料表
+
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table push_subscriptions enable row level security;
+
+drop policy if exists "push_subscriptions public read" on push_subscriptions;
+create policy "push_subscriptions public read" on push_subscriptions for select using (true);
+
+drop policy if exists "push_subscriptions public insert" on push_subscriptions;
+create policy "push_subscriptions public insert" on push_subscriptions for insert with check (true);
+
+drop policy if exists "push_subscriptions public update" on push_subscriptions;
+create policy "push_subscriptions public update" on push_subscriptions for update using (true);
+
+drop policy if exists "push_subscriptions public delete" on push_subscriptions;
+create policy "push_subscriptions public delete" on push_subscriptions for delete using (true);
+
+create table if not exists reminder_state (
+  type text primary key,
+  last_notified_due_date date
+);
+
+alter table reminder_state enable row level security;
+
+drop policy if exists "reminder_state public read" on reminder_state;
+create policy "reminder_state public read" on reminder_state for select using (true);
+
+drop policy if exists "reminder_state public insert" on reminder_state;
+create policy "reminder_state public insert" on reminder_state for insert with check (true);
+
+drop policy if exists "reminder_state public update" on reminder_state;
+create policy "reminder_state public update" on reminder_state for update using (true);

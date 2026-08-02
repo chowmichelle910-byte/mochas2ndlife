@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/flea-reminder",
+      "schedule": "0 1 * * *"
+    }
+  ]
+}

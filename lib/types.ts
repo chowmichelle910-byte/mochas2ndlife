@@ -1,4 +1,4 @@
-export type EntryType = "food" | "water" | "pee" | "poop";
+export type EntryType = "food" | "water" | "pee" | "poop" | "flea";
 
 export interface Entry {
   id: string;
@@ -24,4 +24,5 @@ export const ENTRY_META: Record<
   water: { label: "喝水", unit: "ml", emoji: "💧", color: "bg-blue-100 text-blue-800" },
   pee: { label: "尿尿", unit: "ml", emoji: "🚽", color: "bg-sky-100 text-sky-800" },
   poop: { label: "便便", unit: "次", emoji: "💩", color: "bg-amber-200 text-amber-900" },
+  flea: { label: "除蟲藥", unit: "次", emoji: "💊", color: "bg-purple-100 text-purple-800" },
 };

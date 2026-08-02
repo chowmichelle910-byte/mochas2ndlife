@@ -17,6 +17,12 @@ export function addDays(dateKey: string, delta: number): string {
   return toDateKey(d);
 }
 
+export function addMonths(dateKey: string, delta: number): string {
+  const d = new Date(`${dateKey}T00:00:00`);
+  d.setMonth(d.getMonth() + delta);
+  return toDateKey(d);
+}
+
 export function formatDisplayDate(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00`);
   return d.toLocaleDateString("zh-TW", {

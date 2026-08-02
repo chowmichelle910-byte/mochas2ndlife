@@ -20,7 +20,7 @@ export default function AddEntrySheet({
   onSubmit: (input: EntryInput) => Promise<void>;
 }) {
   const meta = ENTRY_META[type];
-  const needsAmount = type !== "poop";
+  const needsAmount = type !== "poop" && type !== "flea";
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -101,7 +101,9 @@ export default function AddEntrySheet({
             value={note}
             onChange={(e) => setNote(e.target.value)}
             className="mt-1 rounded-xl border border-stone-200 px-3 py-2 focus:border-orange-400 focus:outline-none"
-            placeholder={type === "poop" ? "軟便 / 正常 / 稀便..." : ""}
+            placeholder={
+              type === "poop" ? "軟便 / 正常 / 稀便..." : type === "flea" ? "藥品名稱..." : ""
+            }
           />
         </label>
 

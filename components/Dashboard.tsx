@@ -9,6 +9,7 @@ import DateNav from "@/components/DateNav";
 import TodayGrid from "@/components/TodayGrid";
 import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
+import FleaReminderCard from "@/components/FleaReminderCard";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -16,6 +17,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
+  const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
 
   const loadEntries = useCallback(async (key: string) => {
     setLoading(true);
@@ -48,6 +50,9 @@ export default function Dashboard() {
       return;
     }
     await loadEntries(dateKey);
+    if (input.type === "flea") {
+      setFleaRefreshKey((k) => k + 1);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -66,6 +71,8 @@ export default function Dashboard() {
       </h1>
 
       <PetProfile />
+
+      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
 
       <DateNav dateKey={dateKey} onChange={setDateKey} />
 
