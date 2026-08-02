@@ -48,22 +48,28 @@ export default function PushReminderToggle() {
   if (status === "checking") return null;
 
   if (status === "unsupported") {
-    return <p className="text-xs text-stone-400">這個瀏覽器不支援推播通知。</p>;
+    return (
+      <div className="rounded-3xl bg-white p-4 text-xs text-stone-400 shadow-sm">
+        這個瀏覽器不支援推播通知。
+      </div>
+    );
   }
 
   if (status === "denied") {
     return (
-      <p className="text-xs text-stone-400">
+      <div className="rounded-3xl bg-white p-4 text-xs text-stone-400 shadow-sm">
         瀏覽器通知權限已被封鎖，請到瀏覽器設定手動開啟後再試一次。
-      </p>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1">
+    <div className="rounded-3xl bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-stone-500">
-          {status === "subscribed" ? "已開啟到期推播提醒" : "開啟後，到期會推播通知你"}
+          {status === "subscribed"
+            ? "已開啟推播提醒（除蟲藥到期、每週三量體重）"
+            : "開啟後，除蟲藥到期、每週三量體重都會推播通知你"}
         </span>
         <button
           type="button"
@@ -74,7 +80,7 @@ export default function PushReminderToggle() {
           {busy ? "處理中..." : status === "subscribed" ? "關閉推播" : "啟用推播"}
         </button>
       </div>
-      {error && <p className="text-xs text-red-500">{error}</p>}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
   );
 }

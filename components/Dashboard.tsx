@@ -11,6 +11,7 @@ import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
+import PushReminderToggle from "@/components/PushReminderToggle";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -76,6 +77,8 @@ export default function Dashboard() {
       </h1>
 
       <PetProfile />
+
+      <PushReminderToggle />
 
       <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
 

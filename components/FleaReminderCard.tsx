@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { addMonths, formatDisplayDate, toDateKey } from "@/lib/date";
 import { Entry } from "@/lib/types";
-import PushReminderToggle from "@/components/PushReminderToggle";
 
 const REMINDER_MONTHS = 3;
 const SOON_THRESHOLD_DAYS = 14;
@@ -99,10 +98,6 @@ export default function FleaReminderCard({
           還沒有紀錄，點右上角「+」新增第一次點藥紀錄
         </div>
       )}
-
-      <div className="mt-3 border-t border-stone-100 pt-3">
-        <PushReminderToggle />
-      </div>
     </div>
   );
 }
