@@ -10,6 +10,7 @@ import TodayGrid from "@/components/TodayGrid";
 import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
+import WeightCard from "@/components/WeightCard";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -18,6 +19,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
+  const [weightRefreshKey, setWeightRefreshKey] = useState(0);
 
   const loadEntries = useCallback(async (key: string) => {
     setLoading(true);
@@ -53,6 +55,9 @@ export default function Dashboard() {
     if (input.type === "flea") {
       setFleaRefreshKey((k) => k + 1);
     }
+    if (input.type === "weight") {
+      setWeightRefreshKey((k) => k + 1);
+    }
   }
 
   async function handleDelete(id: string) {
@@ -71,6 +76,8 @@ export default function Dashboard() {
       </h1>
 
       <PetProfile />
+
+      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
 
       <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
 

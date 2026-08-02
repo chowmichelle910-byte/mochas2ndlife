@@ -21,6 +21,7 @@ export default function AddEntrySheet({
 }) {
   const meta = ENTRY_META[type];
   const needsAmount = type !== "poop" && type !== "flea";
+  const isDecimal = type === "weight";
 
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
@@ -73,8 +74,8 @@ export default function AddEntrySheet({
             <input
               type="number"
               min={0}
-              step="1"
-              inputMode="numeric"
+              step={isDecimal ? "0.1" : "1"}
+              inputMode={isDecimal ? "decimal" : "numeric"}
               autoFocus
               value={amount}
               onChange={(e) => setAmount(e.target.value)}

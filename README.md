@@ -1,6 +1,6 @@
 # 🐾 貓咪健康紀錄
 
-紀錄貓咪每天的飲食（食物 g）、喝水（ml）、尿尿（ml）與便便（次數）狀況，以及除蟲藥的點藥週期提醒的小網站。
+紀錄貓咪每天的飲食（食物 g）、喝水（ml）、尿尿（ml）與便便（次數）狀況、體重變化、除蟲藥的點藥週期提醒，以及到家累計天數的小網站。
 用 Next.js + Supabase 打造，可部署到 Vercel。
 
 畫面採用溫暖米色系、白色卡片 + 橘色重點色的風格，並支援上傳 Mocha 的頭像照片。除蟲藥點藥滿 3 個月會透過瀏覽器推播通知提醒。
@@ -14,16 +14,16 @@
 
 ## 資料結構
 
-主要資料表 `entries`，每一筆是一個事件（吃飯 / 喝水 / 尿尿 / 便便 / 點除蟲藥），可以一天記錄多次，畫面上會依日期加總顯示：
+主要資料表 `entries`，每一筆是一個事件（吃飯 / 喝水 / 尿尿 / 便便 / 點除蟲藥 / 量體重），可以一天記錄多次，畫面上會依日期加總顯示：
 
 | 欄位 | 說明 |
 | --- | --- |
-| `type` | `food` / `water` / `pee` / `poop` / `flea` |
-| `amount` | 數量（食物用 g、喝水/尿尿用 ml，便便、除蟲藥可留空） |
+| `type` | `food` / `water` / `pee` / `poop` / `flea` / `weight` |
+| `amount` | 數量（食物用 g、喝水/尿尿用 ml、體重用 kg，便便、除蟲藥可留空） |
 | `note` | 備註，例如便便軟硬程度、除蟲藥品名 |
 | `occurred_at` | 發生時間 |
 
-另外還有 `push_subscriptions`（瀏覽器推播訂閱資訊）與 `reminder_state`（避免同一次到期重複推播）兩張輔助表。完整定義見 [`supabase/schema.sql`](./supabase/schema.sql)。
+另外還有 `push_subscriptions`（瀏覽器推播訂閱資訊）、`reminder_state`（避免同一次到期重複推播）、`settings`（單一設定值，目前用來存到家日期）三張輔助表。完整定義見 [`supabase/schema.sql`](./supabase/schema.sql)。
 
 Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定檔名 `mocha.*`，上傳新照片會直接覆蓋舊的），設定見 [`supabase/storage.sql`](./supabase/storage.sql)。
 
@@ -35,11 +35,16 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 
 > ⚠️ **iPhone 限制**：iOS Safari 只有在把網站「加入主畫面」變成 App 之後，Web Push 才會生效，直接用瀏覽器分頁開啟是收不到通知的（Apple 的限制，不是這個網站的 bug）。Android／桌機瀏覽器（Chrome、Edge、Firefox）不需要額外設定。
 
+## 體重與到家天數
+
+- **體重**：卡片右上角「+」新增一筆量體重紀錄，會顯示最新體重，以及跟上一次相比是變重（▲）還是變輕（▼）。
+- **到家第 N 天**：在寵物資訊卡點「設定到家日期」，選一個日期存起來（到家當天算第 1 天），之後首頁就會一直顯示累計天數；要修改的話再點一次同一個位置就能改。
+
 ## 1. 建立 Supabase 專案
 
 1. 到 [supabase.com](https://supabase.com/) 建立一個新專案。
 2. 進入專案的 **SQL Editor**，依序貼上並執行：
-   - [`supabase/schema.sql`](./supabase/schema.sql) — 建立 `entries`、`push_subscriptions`、`reminder_state` 資料表（如果你之前已經執行過舊版，重新整份貼上執行一次也沒關係，會自動升級）
+   - [`supabase/schema.sql`](./supabase/schema.sql) — 建立 `entries`、`push_subscriptions`、`reminder_state`、`settings` 資料表（如果你之前已經執行過舊版，重新整份貼上執行一次也沒關係，會自動升級）
    - [`supabase/storage.sql`](./supabase/storage.sql) — 建立存放頭像照片的 `avatars` storage bucket
 3. 到 **Settings → API**，複製：
    - `Project URL`

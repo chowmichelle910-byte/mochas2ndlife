@@ -3,17 +3,17 @@
 
 create table if not exists entries (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea')),
+  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight')),
   amount numeric,
   note text,
   occurred_at timestamptz not null default now(),
   created_at timestamptz not null default now()
 );
 
--- 如果資料表是舊版建立的（沒有 'flea' 這個 type），把限制條件更新成最新版本。
+-- 如果資料表是舊版建立的（缺少較新的 type），把限制條件更新成最新版本。
 alter table entries drop constraint if exists entries_type_check;
 alter table entries add constraint entries_type_check
-  check (type in ('food', 'water', 'pee', 'poop', 'flea'));
+  check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight'));
 
 create index if not exists entries_occurred_at_idx on entries (occurred_at desc);
 
@@ -69,3 +69,21 @@ create policy "reminder_state public insert" on reminder_state for insert with c
 
 drop policy if exists "reminder_state public update" on reminder_state;
 create policy "reminder_state public update" on reminder_state for update using (true);
+
+-- 通用設定值（例如「到家日期」），key-value 形式方便之後擴充
+
+create table if not exists settings (
+  key text primary key,
+  value text
+);
+
+alter table settings enable row level security;
+
+drop policy if exists "settings public read" on settings;
+create policy "settings public read" on settings for select using (true);
+
+drop policy if exists "settings public insert" on settings;
+create policy "settings public insert" on settings for insert with check (true);
+
+drop policy if exists "settings public update" on settings;
+create policy "settings public update" on settings for update using (true);
