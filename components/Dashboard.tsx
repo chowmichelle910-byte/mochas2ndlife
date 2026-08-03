@@ -73,7 +73,7 @@ export default function Dashboard() {
   return (
     <main className="flex flex-col gap-4">
       <h1 className="flex items-center justify-center gap-2 py-1 text-lg font-semibold text-stone-700">
-        🐾 貓咪健康紀錄
+        🐾 Mocha健康紀錄
       </h1>
 
       <PetProfile />

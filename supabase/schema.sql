@@ -1,4 +1,4 @@
--- 貓咪健康紀錄 schema
+-- Mocha健康紀錄 schema
 -- 在 Supabase 專案的 SQL Editor 貼上並執行整份檔案（重複執行也安全，可用來更新舊的資料庫）
 
 create table if not exists entries (

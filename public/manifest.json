@@ -1,6 +1,6 @@
 {
-  "name": "貓咪健康紀錄",
-  "short_name": "貓咪健康紀錄",
+  "name": "Mocha健康紀錄",
+  "short_name": "Mocha健康紀錄",
   "description": "紀錄貓咪每天的飲食、喝水、排尿與排便狀況",
   "start_url": "/",
   "display": "standalone",
