@@ -52,14 +52,18 @@ export async function fetchReportSeries(
   }
 
   let previousSum = 0;
+  let previousLoggedDays = 0;
   let prevCursor = startPrevious;
   for (let i = 0; i < rangeDays; i++) {
-    previousSum += byDay.get(prevCursor) ?? 0;
+    const value = byDay.get(prevCursor) ?? 0;
+    previousSum += value;
+    if (value > 0) previousLoggedDays += 1;
     prevCursor = addDays(prevCursor, 1);
   }
 
-  const currentAvg = values.reduce((a, b) => a + b, 0) / rangeDays;
-  const previousAvg = previousSum / rangeDays;
+  const currentLoggedDays = values.filter((v) => v > 0).length;
+  const currentAvg = currentLoggedDays > 0 ? values.reduce((a, b) => a + b, 0) / currentLoggedDays : 0;
+  const previousAvg = previousLoggedDays > 0 ? previousSum / previousLoggedDays : 0;
   const changePercent = previousAvg > 0 ? ((currentAvg - previousAvg) / previousAvg) * 100 : null;
 
   return { days, values, currentAvg, previousAvg, changePercent };
