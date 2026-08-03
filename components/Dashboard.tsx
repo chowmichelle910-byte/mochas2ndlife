@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { dateKeyToRange, toDateKey } from "@/lib/date";
@@ -12,6 +11,7 @@ import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
+import SideMenu from "@/components/SideMenu";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -21,6 +21,7 @@ export default function Dashboard() {
   const [addingType, setAddingType] = useState<EntryType | null>(null);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const loadEntries = useCallback(async (key: string) => {
     setLoading(true);
@@ -73,17 +74,20 @@ export default function Dashboard() {
   return (
     <main className="flex flex-col gap-4">
       <div className="relative flex items-center justify-center py-1">
-        <Link
-          href="/settings"
-          aria-label="設定"
+        <button
+          type="button"
+          onClick={() => setMenuOpen(true)}
+          aria-label="開啟選單"
           className="absolute left-0 flex h-9 w-9 items-center justify-center rounded-full text-xl text-stone-600 hover:bg-white/60"
         >
           ☰
-        </Link>
+        </button>
         <h1 className="flex items-center gap-2 text-lg font-semibold text-stone-700">
           🐾 mocha健康紀錄
         </h1>
       </div>
+
+      <SideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
 
       <PetProfile />
 
