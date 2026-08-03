@@ -23,6 +23,12 @@ export function addMonths(dateKey: string, delta: number): string {
   return toDateKey(d);
 }
 
+export function daysBetween(startKey: string, endKey: string): number {
+  const start = new Date(`${startKey}T00:00:00`).getTime();
+  const end = new Date(`${endKey}T00:00:00`).getTime();
+  return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+}
+
 export function formatDisplayDate(dateKey: string): string {
   const d = new Date(`${dateKey}T00:00:00`);
   return d.toLocaleDateString("zh-TW", {

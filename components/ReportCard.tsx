@@ -52,10 +52,12 @@ export default function ReportCard({
   type,
   rangeDays,
   compareLabel,
+  endDateKey,
 }: {
   type: ReportType;
   rangeDays: number;
   compareLabel: string;
+  endDateKey: string;
 }) {
   const [series, setSeries] = useState<ReportSeries | null>(null);
   const [loading, setLoading] = useState(true);
@@ -64,11 +66,11 @@ export default function ReportCard({
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetchReportSeries(type, rangeDays)
+    fetchReportSeries(type, rangeDays, endDateKey)
       .then(setSeries)
       .catch((err) => setError(err instanceof Error ? err.message : "載入失敗"))
       .finally(() => setLoading(false));
-  }, [type, rangeDays]);
+  }, [type, rangeDays, endDateKey]);
 
   const cfg = CONFIG[type];
   const isMonth = rangeDays > 7;

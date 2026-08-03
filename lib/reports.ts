@@ -15,13 +15,16 @@ function fallbackAmount(type: ReportType): number {
   return type === "food" ? 0 : 1;
 }
 
-export async function fetchReportSeries(type: ReportType, rangeDays: number): Promise<ReportSeries> {
-  const todayKey = toDateKey(new Date());
-  const startCurrent = addDays(todayKey, -(rangeDays - 1));
+export async function fetchReportSeries(
+  type: ReportType,
+  rangeDays: number,
+  endDateKey: string = toDateKey(new Date())
+): Promise<ReportSeries> {
+  const startCurrent = addDays(endDateKey, -(rangeDays - 1));
   const startPrevious = addDays(startCurrent, -rangeDays);
 
   const { start } = dateKeyToRange(startPrevious);
-  const { end } = dateKeyToRange(todayKey);
+  const { end } = dateKeyToRange(endDateKey);
 
   const { data, error } = await supabase
     .from("entries")
