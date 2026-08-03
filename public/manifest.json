@@ -1,0 +1,13 @@
+{
+  "name": "貓咪健康紀錄",
+  "short_name": "貓咪健康紀錄",
+  "description": "紀錄貓咪每天的飲食、喝水、排尿與排便狀況",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fdf8f3",
+  "theme_color": "#f97316",
+  "icons": [
+    { "src": "/icon.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}

@@ -4,6 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "貓咪健康紀錄",
   description: "紀錄貓咪每天的飲食、喝水、排尿與排便狀況",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "貓咪健康紀錄",
+    statusBarStyle: "default",
+  },
 };
 
 export default function RootLayout({
