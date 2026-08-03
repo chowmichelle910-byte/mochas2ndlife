@@ -29,7 +29,7 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 
 ## 推播提醒怎麼運作
 
-1. 在寵物資訊卡下方按「啟用推播」，瀏覽器會請你同意通知權限，同意後會把訂閱資訊存進 `push_subscriptions`（這組訂閱同時涵蓋除蟲藥跟體重兩種提醒，只要開一次）。
+1. 點首頁左上角的「☰」進入設定頁，按「啟用推播」，瀏覽器會請你同意通知權限，同意後會把訂閱資訊存進 `push_subscriptions`（這組訂閱同時涵蓋除蟲藥跟體重兩種提醒，只要開一次）。
 2. 兩種提醒各自的 Vercel Cron Job（設定在 `vercel.json`）：
    - `/api/cron/flea-reminder`：每天檢查一次，算出「上次點藥日期 + 3 個月」，到期且這次到期還沒推播過，就發送推播並清掉已經失效的訂閱。
    - `/api/cron/weight-reminder`：只在每週三檢查，直接對所有訂閱裝置發送「該量體重了」的推播提醒。
@@ -121,6 +121,7 @@ npm run dev
 
 ```
 app/                          # Next.js App Router 頁面與 API 路由
+app/settings                  # 設定頁（點首頁左上角「☰」進入），目前放推播開關
 app/api/cron/flea-reminder    # Vercel Cron 呼叫的除蟲藥提醒檢查（每天）
 app/api/cron/weight-reminder  # Vercel Cron 呼叫的體重提醒（每週三）
 components/                   # 前端元件（寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、今日紀錄格、新增紀錄彈窗、清單、日期切換）

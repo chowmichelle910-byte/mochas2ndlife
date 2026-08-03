@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { dateKeyToRange, toDateKey } from "@/lib/date";
@@ -11,7 +12,6 @@ import AddEntrySheet from "@/components/AddEntrySheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
-import PushReminderToggle from "@/components/PushReminderToggle";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -72,13 +72,20 @@ export default function Dashboard() {
 
   return (
     <main className="flex flex-col gap-4">
-      <h1 className="flex items-center justify-center gap-2 py-1 text-lg font-semibold text-stone-700">
-        🐾 mocha健康紀錄
-      </h1>
+      <div className="relative flex items-center justify-center py-1">
+        <Link
+          href="/settings"
+          aria-label="設定"
+          className="absolute left-0 flex h-9 w-9 items-center justify-center rounded-full text-xl text-stone-600 hover:bg-white/60"
+        >
+          ☰
+        </Link>
+        <h1 className="flex items-center gap-2 text-lg font-semibold text-stone-700">
+          🐾 mocha健康紀錄
+        </h1>
+      </div>
 
       <PetProfile />
-
-      <PushReminderToggle />
 
       <DateNav dateKey={dateKey} onChange={setDateKey} />
 
