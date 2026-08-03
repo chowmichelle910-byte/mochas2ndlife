@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 
-const MENU_ITEMS = [{ href: "/settings", label: "設定", emoji: "⚙️" }];
+const MENU_ITEMS = [
+  { href: "/reports", label: "報表", emoji: "📊" },
+  { href: "/settings", label: "設定", emoji: "⚙️" },
+];
 
 export default function SideMenu({
   open,

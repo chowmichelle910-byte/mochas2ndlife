@@ -65,6 +65,15 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 
 「今日紀錄」卡片上顯示的是當天的**加總次數**（同一筆紀錄如果選了 3 次，就算 3 次）。
 
+## 報表
+
+側邊選單「報表」可以看食物、便便、尿尿三項的趨勢，上方切換「1週」/「1個月」：
+
+- 每張卡片顯示「平均每天多少」跟跟上一個週期比較的漲跌幅（例如這週平均 vs 上週平均）
+- 下方是每天的長條圖，虛線是這個週期的平均值；1 週檢視會標星期幾，1 個月檢視長條比較多，用手指左右滑動看
+- 食物看的是總重量（g/天），便便、尿尿看的是次數（次/天）
+- 如果上一個週期完全沒有紀錄，會顯示「新紀錄」而不是漲跌幅（避免除以 0 算出奇怪的數字）
+
 ## 1. 建立 Supabase 專案
 
 1. 到 [supabase.com](https://supabase.com/) 建立一個新專案。
@@ -122,10 +131,11 @@ npm run dev
 ```
 app/                          # Next.js App Router 頁面與 API 路由
 app/settings                  # 設定頁（側邊選單點「設定」進入），目前放推播開關
+app/reports                   # 報表頁（側邊選單點「報表」進入），食物/便便/尿尿週或月比較
 app/api/cron/flea-reminder    # Vercel Cron 呼叫的除蟲藥提醒檢查（每天）
 app/api/cron/weight-reminder  # Vercel Cron 呼叫的體重提醒（每週三）
-components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、今日紀錄格、新增紀錄彈窗、清單、日期切換）
-lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、共用的推播發送邏輯
+components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、報表卡、今日紀錄格、新增紀錄彈窗、清單、日期切換）
+lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、共用的推播發送邏輯
 public/sw.js                  # 接收推播通知的 Service Worker
 supabase/schema.sql           # entries / push_subscriptions / reminder_state / settings 資料表結構
 supabase/storage.sql          # 頭像照片 storage bucket 與權限
