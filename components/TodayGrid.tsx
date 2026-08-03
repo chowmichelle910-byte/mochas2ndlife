@@ -15,6 +15,11 @@ function summaryFor(entries: Entry[], type: EntryType): string {
   }
 
   const total = matches.reduce((sum, e) => sum + (e.amount ?? 0), 0);
+  if (type === "food") {
+    const feedCount = matches.filter((e) => (e.amount ?? 0) > 0).length;
+    return `${total} ${meta.unit} · ${feedCount} 次`;
+  }
+
   return `${total} ${meta.unit} · ${matches.length} 次`;
 }
 
@@ -23,7 +28,7 @@ export default function TodayGrid({
   onAdd,
 }: {
   entries: Entry[];
-  onAdd: (type: EntryType) => void;
+  onAdd: (type: EntryType, mode?: "add" | "subtract") => void;
 }) {
   return (
     <div>
@@ -38,6 +43,16 @@ export default function TodayGrid({
                 <span className="font-medium">{meta.label}</span>
               </div>
               <div className="mt-2 text-sm text-stone-400">{summaryFor(entries, type)}</div>
+              {type === "food" && (
+                <button
+                  type="button"
+                  aria-label="扣除食物剩量"
+                  onClick={() => onAdd(type, "subtract")}
+                  className="absolute bottom-3 right-14 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-xl font-semibold text-stone-500 transition hover:bg-stone-200"
+                >
+                  −
+                </button>
+              )}
               <button
                 type="button"
                 aria-label={`新增${meta.label}紀錄`}

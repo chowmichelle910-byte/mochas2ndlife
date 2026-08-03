@@ -19,6 +19,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
+  const [addingMode, setAddingMode] = useState<"add" | "subtract">("add");
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -99,7 +100,13 @@ export default function Dashboard() {
         </div>
       )}
 
-      <TodayGrid entries={entries} onAdd={setAddingType} />
+      <TodayGrid
+        entries={entries}
+        onAdd={(type, mode) => {
+          setAddingType(type);
+          setAddingMode(mode ?? "add");
+        }}
+      />
 
       <div>
         <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">紀錄列表</h2>
@@ -112,13 +119,26 @@ export default function Dashboard() {
         )}
       </div>
 
-      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
+      <WeightCard
+        refreshKey={weightRefreshKey}
+        onLogClick={() => {
+          setAddingType("weight");
+          setAddingMode("add");
+        }}
+      />
 
-      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
+      <FleaReminderCard
+        refreshKey={fleaRefreshKey}
+        onLogClick={() => {
+          setAddingType("flea");
+          setAddingMode("add");
+        }}
+      />
 
       {addingType && (
         <AddEntrySheet
           type={addingType}
+          mode={addingMode}
           onClose={() => setAddingType(null)}
           onSubmit={handleAdd}
         />
