@@ -13,6 +13,7 @@ import WaterMeasureSheet from "@/components/WaterMeasureSheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
+import ActivityCard from "@/components/ActivityCard";
 import SideMenu from "@/components/SideMenu";
 
 export default function Dashboard() {
@@ -25,6 +26,7 @@ export default function Dashboard() {
   const [measuringWater, setMeasuringWater] = useState(false);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
+  const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
   const loadEntries = useCallback(async (key: string) => {
@@ -63,6 +65,9 @@ export default function Dashboard() {
     }
     if (input.type === "weight") {
       setWeightRefreshKey((k) => k + 1);
+    }
+    if (input.type === "activity") {
+      setActivityRefreshKey((k) => k + 1);
     }
   }
 
@@ -126,6 +131,8 @@ export default function Dashboard() {
       <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
 
       <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
+
+      <ActivityCard refreshKey={activityRefreshKey} onLogClick={() => setAddingType("activity")} />
 
       {addingType && (
         <AddEntrySheet

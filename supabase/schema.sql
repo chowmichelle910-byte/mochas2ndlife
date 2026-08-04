@@ -3,7 +3,7 @@
 
 create table if not exists entries (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight')),
+  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity')),
   amount numeric,
   note text,
   occurred_at timestamptz not null default now(),
@@ -13,7 +13,7 @@ create table if not exists entries (
 -- 如果資料表是舊版建立的（缺少較新的 type），把限制條件更新成最新版本。
 alter table entries drop constraint if exists entries_type_check;
 alter table entries add constraint entries_type_check
-  check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight'));
+  check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity'));
 
 create index if not exists entries_occurred_at_idx on entries (occurred_at desc);
 
@@ -106,3 +106,22 @@ create policy "food_brands public insert" on food_brands for insert with check (
 
 drop policy if exists "food_brands public update" on food_brands;
 create policy "food_brands public update" on food_brands for update using (true);
+
+-- 活動類型快捷選項（例如「剪指甲」「剃腳毛」），使用者可以自己新增
+
+create table if not exists activity_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table activity_types enable row level security;
+
+drop policy if exists "activity_types public read" on activity_types;
+create policy "activity_types public read" on activity_types for select using (true);
+
+drop policy if exists "activity_types public insert" on activity_types;
+create policy "activity_types public insert" on activity_types for insert with check (true);
+
+drop policy if exists "activity_types public update" on activity_types;
+create policy "activity_types public update" on activity_types for update using (true);

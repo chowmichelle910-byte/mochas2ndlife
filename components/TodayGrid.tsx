@@ -57,10 +57,20 @@ export default function TodayGrid({
                   −
                 </button>
               )}
+              {type === "water" && (
+                <button
+                  type="button"
+                  aria-label="用起始/剩餘水量計算飲水量"
+                  onClick={onMeasureWater}
+                  className="absolute bottom-3 right-14 flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-lg font-semibold text-blue-500 transition hover:bg-blue-200"
+                >
+                  🧮
+                </button>
+              )}
               <button
                 type="button"
-                aria-label={type === "water" ? "量水量" : `新增${meta.label}紀錄`}
-                onClick={() => (type === "water" ? onMeasureWater() : onAdd(type))}
+                aria-label={`新增${meta.label}紀錄`}
+                onClick={() => onAdd(type)}
                 className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-xl font-semibold text-orange-500 transition hover:bg-orange-200"
               >
                 +
