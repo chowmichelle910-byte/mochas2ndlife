@@ -9,6 +9,7 @@ import DateNav from "@/components/DateNav";
 import TodayGrid from "@/components/TodayGrid";
 import AddEntrySheet from "@/components/AddEntrySheet";
 import SubtractFoodSheet from "@/components/SubtractFoodSheet";
+import WaterMeasureSheet from "@/components/WaterMeasureSheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
@@ -21,6 +22,7 @@ export default function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
   const [subtractingFood, setSubtractingFood] = useState(false);
+  const [measuringWater, setMeasuringWater] = useState(false);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -107,6 +109,7 @@ export default function Dashboard() {
         entries={entries}
         onAdd={setAddingType}
         onSubtractFood={() => setSubtractingFood(true)}
+        onMeasureWater={() => setMeasuringWater(true)}
       />
 
       <div>
@@ -136,6 +139,13 @@ export default function Dashboard() {
         <SubtractFoodSheet
           entries={todaysFeedings}
           onClose={() => setSubtractingFood(false)}
+          onSaved={() => loadEntries(dateKey)}
+        />
+      )}
+
+      {measuringWater && (
+        <WaterMeasureSheet
+          onClose={() => setMeasuringWater(false)}
           onSaved={() => loadEntries(dateKey)}
         />
       )}

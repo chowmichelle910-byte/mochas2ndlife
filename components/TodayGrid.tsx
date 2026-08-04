@@ -27,10 +27,12 @@ export default function TodayGrid({
   entries,
   onAdd,
   onSubtractFood,
+  onMeasureWater,
 }: {
   entries: Entry[];
   onAdd: (type: EntryType) => void;
   onSubtractFood: () => void;
+  onMeasureWater: () => void;
 }) {
   return (
     <div>
@@ -57,8 +59,8 @@ export default function TodayGrid({
               )}
               <button
                 type="button"
-                aria-label={`新增${meta.label}紀錄`}
-                onClick={() => onAdd(type)}
+                aria-label={type === "water" ? "量水量" : `新增${meta.label}紀錄`}
+                onClick={() => (type === "water" ? onMeasureWater() : onAdd(type))}
                 className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-orange-100 text-xl font-semibold text-orange-500 transition hover:bg-orange-200"
               >
                 +
