@@ -26,9 +26,11 @@ function summaryFor(entries: Entry[], type: EntryType): string {
 export default function TodayGrid({
   entries,
   onAdd,
+  onSubtractFood,
 }: {
   entries: Entry[];
-  onAdd: (type: EntryType, mode?: "add" | "subtract") => void;
+  onAdd: (type: EntryType) => void;
+  onSubtractFood: () => void;
 }) {
   return (
     <div>
@@ -47,7 +49,7 @@ export default function TodayGrid({
                 <button
                   type="button"
                   aria-label="扣除食物剩量"
-                  onClick={() => onAdd(type, "subtract")}
+                  onClick={onSubtractFood}
                   className="absolute bottom-3 right-14 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-xl font-semibold text-stone-500 transition hover:bg-stone-200"
                 >
                   −

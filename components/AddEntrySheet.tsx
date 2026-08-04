@@ -30,19 +30,16 @@ const DEFAULT_FOOD_BRANDS = ["皇家乾糧", "皇家罐罐"];
 
 export default function AddEntrySheet({
   type,
-  mode = "add",
   onClose,
   onSubmit,
 }: {
   type: EntryType;
-  mode?: "add" | "subtract";
   onClose: () => void;
   onSubmit: (input: EntryInput) => Promise<void>;
 }) {
   const meta = ENTRY_META[type];
-  const isSubtractFood = type === "food" && mode === "subtract";
   const usesPeriodPicker = type === "pee" || type === "poop";
-  const usesBrandChips = type === "food" && !isSubtractFood;
+  const usesBrandChips = type === "food";
   const needsAmount = !usesPeriodPicker && type !== "flea";
   const isDecimal = type === "weight";
 
@@ -107,15 +104,12 @@ export default function AddEntrySheet({
       } else {
         occurred_at = new Date(occurredAt).toISOString();
         amountValue = needsAmount && amount !== "" ? Number(amount) : null;
-        if (isSubtractFood && amountValue !== null) {
-          amountValue = -Math.abs(amountValue);
-        }
       }
 
       await onSubmit({
         type,
         amount: amountValue,
-        note: note.trim() || (isSubtractFood ? "剩食" : null),
+        note: note.trim() || null,
         occurred_at,
       });
       onClose();
@@ -136,7 +130,7 @@ export default function AddEntrySheet({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-stone-800">
-            {meta.emoji} {isSubtractFood ? "扣除食物剩量" : `新增${meta.label}紀錄`}
+            {meta.emoji} 新增{meta.label}紀錄
           </h2>
           <button
             type="button"
@@ -199,7 +193,7 @@ export default function AddEntrySheet({
 
         {needsAmount && (
           <label className="flex flex-col text-sm text-stone-600">
-            {isSubtractFood ? `剩下多少（${meta.unit}）` : `數量（${meta.unit}）`}
+            數量（{meta.unit}）
             <input
               type="number"
               min={0}
@@ -293,11 +287,9 @@ export default function AddEntrySheet({
         <button
           type="submit"
           disabled={submitting}
-          className={`rounded-xl py-2.5 font-medium text-white transition disabled:opacity-50 ${
-            isSubtractFood ? "bg-stone-500 hover:bg-stone-600" : "bg-orange-400 hover:bg-orange-500"
-          }`}
+          className="rounded-xl bg-orange-400 py-2.5 font-medium text-white transition hover:bg-orange-500 disabled:opacity-50"
         >
-          {submitting ? "儲存中..." : isSubtractFood ? "扣除" : "儲存"}
+          {submitting ? "儲存中..." : "儲存"}
         </button>
       </form>
     </div>

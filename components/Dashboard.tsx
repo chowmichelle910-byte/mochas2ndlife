@@ -8,6 +8,7 @@ import PetProfile from "@/components/PetProfile";
 import DateNav from "@/components/DateNav";
 import TodayGrid from "@/components/TodayGrid";
 import AddEntrySheet from "@/components/AddEntrySheet";
+import SubtractFoodSheet from "@/components/SubtractFoodSheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
-  const [addingMode, setAddingMode] = useState<"add" | "subtract">("add");
+  const [subtractingFood, setSubtractingFood] = useState(false);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -72,6 +73,8 @@ export default function Dashboard() {
     setEntries((prev) => prev.filter((e) => e.id !== id));
   }
 
+  const todaysFeedings = entries.filter((e) => e.type === "food" && (e.amount ?? 0) > 0);
+
   return (
     <main className="flex flex-col gap-4">
       <div className="relative flex items-center justify-center py-1">
@@ -102,10 +105,8 @@ export default function Dashboard() {
 
       <TodayGrid
         entries={entries}
-        onAdd={(type, mode) => {
-          setAddingType(type);
-          setAddingMode(mode ?? "add");
-        }}
+        onAdd={setAddingType}
+        onSubtractFood={() => setSubtractingFood(true)}
       />
 
       <div>
@@ -119,28 +120,23 @@ export default function Dashboard() {
         )}
       </div>
 
-      <WeightCard
-        refreshKey={weightRefreshKey}
-        onLogClick={() => {
-          setAddingType("weight");
-          setAddingMode("add");
-        }}
-      />
+      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
 
-      <FleaReminderCard
-        refreshKey={fleaRefreshKey}
-        onLogClick={() => {
-          setAddingType("flea");
-          setAddingMode("add");
-        }}
-      />
+      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
 
       {addingType && (
         <AddEntrySheet
           type={addingType}
-          mode={addingMode}
           onClose={() => setAddingType(null)}
           onSubmit={handleAdd}
+        />
+      )}
+
+      {subtractingFood && (
+        <SubtractFoodSheet
+          entries={todaysFeedings}
+          onClose={() => setSubtractingFood(false)}
+          onSaved={() => loadEntries(dateKey)}
         />
       )}
     </main>
