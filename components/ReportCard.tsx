@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ReportSeries, ReportType, fetchReportSeries } from "@/lib/reports";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 const WEEKDAY_LABELS = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -62,6 +63,7 @@ export default function ReportCard({
   const [series, setSeries] = useState<ReportSeries | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const visibilityKey = useVisibilityRefresh();
 
   useEffect(() => {
     setLoading(true);
@@ -70,7 +72,7 @@ export default function ReportCard({
       .then(setSeries)
       .catch((err) => setError(err instanceof Error ? err.message : "載入失敗"))
       .finally(() => setLoading(false));
-  }, [type, rangeDays, endDateKey]);
+  }, [type, rangeDays, endDateKey, visibilityKey]);
 
   const cfg = CONFIG[type];
   const isMonth = rangeDays > 7;

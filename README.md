@@ -91,6 +91,12 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 - 按類型按鈕旁的「+」可以輸入新的活動名稱，存進 `activity_types` 資料表後，之後每次新增活動都會看到這個新類型（跟食物種類的邏輯一樣）
 - 卡片上顯示最近一次的活動類型與日期
 
+## 重新開啟 App 時自動更新資料
+
+iOS「加入主畫面」的網頁 App，切到背景再切回來時，系統通常只是把畫面原封不動地恢復，不會重新跟伺服器要資料，導致看到的是舊資料，要整個滑掉、重新打開才會更新。
+
+這個網站加了偵測機制（`lib/useVisibilityRefresh.ts`）：只要 App 從背景切回前景、視窗重新取得焦點、或瀏覽器從快取恢復頁面，就會自動重新抓取目前畫面需要的資料（今日紀錄、體重、除蟲藥、活動、報表等），但**不會**跳回首頁或重設你正在看的日期、報表區間等狀態——資料是新的，但你還停在原本那一頁。
+
 ## 報表
 
 側邊選單「報表」可以看食物、便便、尿尿三項的趨勢，上方切換「1週」/「1個月」/「自訂期間」：
@@ -162,7 +168,7 @@ app/reports                   # 報表頁（側邊選單點「報表」進入）
 app/api/cron/flea-reminder    # Vercel Cron 呼叫的除蟲藥提醒檢查（每天）
 app/api/cron/weight-reminder  # Vercel Cron 呼叫的體重提醒（每週三）
 components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、活動卡、報表卡、今日紀錄格、新增紀錄彈窗、扣除食物剩量彈窗、量水量彈窗、清單、日期切換）
-lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、飲水量起始值追蹤、食物/活動類型快捷選項、共用的推播發送邏輯
+lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、飲水量起始值追蹤、食物/活動類型快捷選項、App 恢復前景時自動刷新、共用的推播發送邏輯
 public/sw.js                  # 接收推播通知的 Service Worker
 supabase/schema.sql           # entries / push_subscriptions / reminder_state / settings 資料表結構
 supabase/storage.sql          # 頭像照片 storage bucket 與權限

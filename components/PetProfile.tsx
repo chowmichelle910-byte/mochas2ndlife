@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { getAvatarUrl, uploadAvatar } from "@/lib/avatar";
 import { getSetting, setSetting } from "@/lib/settings";
 import { toDateKey } from "@/lib/date";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 const PET_NAME = "Mocha";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -26,13 +27,14 @@ export default function PetProfile() {
   const [editingHomeDate, setEditingHomeDate] = useState(false);
   const [homeDateInput, setHomeDateInput] = useState("");
   const [savingHomeDate, setSavingHomeDate] = useState(false);
+  const visibilityKey = useVisibilityRefresh();
 
   useEffect(() => {
     getAvatarUrl().then(setAvatarUrl).catch(() => {});
     getSetting(HOME_DATE_KEY).then((value) => {
       if (value) setHomeDateKey(value);
     });
-  }, []);
+  }, [visibilityKey]);
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];

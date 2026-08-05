@@ -15,6 +15,7 @@ import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
 import ActivityCard from "@/components/ActivityCard";
 import SideMenu from "@/components/SideMenu";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 export default function Dashboard() {
   const [dateKey, setDateKey] = useState(() => toDateKey(new Date()));
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const visibilityKey = useVisibilityRefresh();
 
   const loadEntries = useCallback(async (key: string) => {
     setLoading(true);
@@ -51,7 +53,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     loadEntries(dateKey);
-  }, [dateKey, loadEntries]);
+  }, [dateKey, loadEntries, visibilityKey]);
 
   async function handleAdd(input: EntryInput) {
     const { error: insertError } = await supabase.from("entries").insert(input);
@@ -128,11 +130,20 @@ export default function Dashboard() {
         )}
       </div>
 
-      <WeightCard refreshKey={weightRefreshKey} onLogClick={() => setAddingType("weight")} />
+      <WeightCard
+        refreshKey={weightRefreshKey + visibilityKey}
+        onLogClick={() => setAddingType("weight")}
+      />
 
-      <FleaReminderCard refreshKey={fleaRefreshKey} onLogClick={() => setAddingType("flea")} />
+      <FleaReminderCard
+        refreshKey={fleaRefreshKey + visibilityKey}
+        onLogClick={() => setAddingType("flea")}
+      />
 
-      <ActivityCard refreshKey={activityRefreshKey} onLogClick={() => setAddingType("activity")} />
+      <ActivityCard
+        refreshKey={activityRefreshKey + visibilityKey}
+        onLogClick={() => setAddingType("activity")}
+      />
 
       {addingType && (
         <AddEntrySheet
