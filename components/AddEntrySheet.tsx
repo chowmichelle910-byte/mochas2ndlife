@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ENTRY_META, EntryInput, EntryType } from "@/lib/types";
 import { addFoodBrand, getCustomFoodBrands } from "@/lib/foodBrands";
 import { addActivityType, getCustomActivityTypes } from "@/lib/activityTypes";
+import { addSnackType, getCustomSnackTypes } from "@/lib/snackTypes";
+import QuickSelectChips from "@/components/QuickSelectChips";
 
 function nowLocalInputValue(): string {
   const d = new Date();
@@ -29,6 +31,7 @@ function defaultPeriodKey(): string {
 
 const DEFAULT_FOOD_BRANDS = ["皇家乾糧", "皇家罐罐"];
 const DEFAULT_ACTIVITY_TYPES = ["剪指甲", "剃腳毛"];
+const DEFAULT_SNACK_TYPES = ["肉泥", "化毛肉泥", "潔牙餅", "凍乾"];
 
 export default function AddEntrySheet({
   type,
@@ -43,7 +46,9 @@ export default function AddEntrySheet({
   const usesPeriodPicker = type === "pee" || type === "poop";
   const usesBrandChips = type === "food";
   const usesActivityChips = type === "activity";
-  const needsAmount = !usesPeriodPicker && type !== "flea" && type !== "activity";
+  const usesSnackChips = type === "snack";
+  const needsAmount =
+    !usesPeriodPicker && type !== "flea" && type !== "activity" && type !== "snack";
   const isDecimal = type === "weight";
 
   const [amount, setAmount] = useState("");
@@ -52,68 +57,6 @@ export default function AddEntrySheet({
   const [note, setNote] = useState("");
   const [occurredAt, setOccurredAt] = useState(nowLocalInputValue());
   const [submitting, setSubmitting] = useState(false);
-
-  const [foodBrands, setFoodBrands] = useState<string[]>(DEFAULT_FOOD_BRANDS);
-  const [addingBrand, setAddingBrand] = useState(false);
-  const [newBrandName, setNewBrandName] = useState("");
-  const [brandError, setBrandError] = useState<string | null>(null);
-
-  const [activityTypes, setActivityTypes] = useState<string[]>(DEFAULT_ACTIVITY_TYPES);
-  const [addingActivityType, setAddingActivityType] = useState(false);
-  const [newActivityTypeName, setNewActivityTypeName] = useState("");
-  const [activityTypeError, setActivityTypeError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!usesBrandChips) return;
-    getCustomFoodBrands().then((custom) => {
-      setFoodBrands([
-        ...DEFAULT_FOOD_BRANDS,
-        ...custom.filter((b) => !DEFAULT_FOOD_BRANDS.includes(b)),
-      ]);
-    });
-  }, [usesBrandChips]);
-
-  useEffect(() => {
-    if (!usesActivityChips) return;
-    getCustomActivityTypes().then((custom) => {
-      setActivityTypes([
-        ...DEFAULT_ACTIVITY_TYPES,
-        ...custom.filter((a) => !DEFAULT_ACTIVITY_TYPES.includes(a)),
-      ]);
-    });
-  }, [usesActivityChips]);
-
-  async function handleAddBrand() {
-    const name = newBrandName.trim();
-    if (!name) return;
-    setBrandError(null);
-    try {
-      await addFoodBrand(name);
-      setFoodBrands((prev) => (prev.includes(name) ? prev : [...prev, name]));
-      setNote(name);
-      setNewBrandName("");
-      setAddingBrand(false);
-    } catch (err) {
-      console.error("add food brand failed", err);
-      setBrandError("新增種類失敗，請稍後再試");
-    }
-  }
-
-  async function handleAddActivityType() {
-    const name = newActivityTypeName.trim();
-    if (!name) return;
-    setActivityTypeError(null);
-    try {
-      await addActivityType(name);
-      setActivityTypes((prev) => (prev.includes(name) ? prev : [...prev, name]));
-      setNote(name);
-      setNewActivityTypeName("");
-      setAddingActivityType(false);
-    } catch (err) {
-      console.error("add activity type failed", err);
-      setActivityTypeError("新增活動類型失敗，請稍後再試");
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -177,101 +120,42 @@ export default function AddEntrySheet({
         </div>
 
         {usesBrandChips && (
-          <div className="flex flex-col gap-2 text-sm text-stone-600">
-            種類
-            <div className="flex flex-wrap gap-2">
-              {foodBrands.map((brand) => (
-                <button
-                  key={brand}
-                  type="button"
-                  onClick={() => setNote(brand)}
-                  className={`rounded-full border px-3 py-1 text-sm transition ${
-                    note === brand
-                      ? "border-orange-400 bg-orange-100 text-orange-700"
-                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                  }`}
-                >
-                  {brand}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setAddingBrand((v) => !v)}
-                aria-label="新增食物種類"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-orange-300 text-orange-500 hover:bg-orange-50"
-              >
-                +
-              </button>
-            </div>
-            {addingBrand && (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newBrandName}
-                  onChange={(e) => setNewBrandName(e.target.value)}
-                  placeholder="輸入新的種類名稱"
-                  className="flex-1 rounded-lg border border-stone-200 px-3 py-1.5 text-base focus:border-orange-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddBrand}
-                  className="rounded-lg bg-orange-400 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-500"
-                >
-                  新增
-                </button>
-              </div>
-            )}
-            {brandError && <p className="text-xs text-red-500">{brandError}</p>}
-          </div>
+          <QuickSelectChips
+            label="種類"
+            defaults={DEFAULT_FOOD_BRANDS}
+            selected={note}
+            onSelect={setNote}
+            fetchCustom={getCustomFoodBrands}
+            addCustom={addFoodBrand}
+            addLabel="新增食物種類"
+            addPlaceholder="輸入新的種類名稱"
+          />
         )}
 
         {usesActivityChips && (
-          <div className="flex flex-col gap-2 text-sm text-stone-600">
-            活動類型
-            <div className="flex flex-wrap gap-2">
-              {activityTypes.map((activity) => (
-                <button
-                  key={activity}
-                  type="button"
-                  onClick={() => setNote(activity)}
-                  className={`rounded-full border px-3 py-1 text-sm transition ${
-                    note === activity
-                      ? "border-orange-400 bg-orange-100 text-orange-700"
-                      : "border-stone-200 bg-white text-stone-600 hover:bg-stone-50"
-                  }`}
-                >
-                  {activity}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setAddingActivityType((v) => !v)}
-                aria-label="新增活動類型"
-                className="flex h-8 w-8 items-center justify-center rounded-full border border-dashed border-orange-300 text-orange-500 hover:bg-orange-50"
-              >
-                +
-              </button>
-            </div>
-            {addingActivityType && (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newActivityTypeName}
-                  onChange={(e) => setNewActivityTypeName(e.target.value)}
-                  placeholder="輸入新的活動類型"
-                  className="flex-1 rounded-lg border border-stone-200 px-3 py-1.5 text-base focus:border-orange-400 focus:outline-none"
-                />
-                <button
-                  type="button"
-                  onClick={handleAddActivityType}
-                  className="rounded-lg bg-orange-400 px-3 py-1.5 text-sm font-medium text-white hover:bg-orange-500"
-                >
-                  新增
-                </button>
-              </div>
-            )}
-            {activityTypeError && <p className="text-xs text-red-500">{activityTypeError}</p>}
-          </div>
+          <QuickSelectChips
+            label="活動類型"
+            defaults={DEFAULT_ACTIVITY_TYPES}
+            selected={note}
+            onSelect={setNote}
+            fetchCustom={getCustomActivityTypes}
+            addCustom={addActivityType}
+            addLabel="新增活動類型"
+            addPlaceholder="輸入新的活動類型"
+          />
+        )}
+
+        {usesSnackChips && (
+          <QuickSelectChips
+            label="零食種類"
+            defaults={DEFAULT_SNACK_TYPES}
+            selected={note}
+            onSelect={setNote}
+            fetchCustom={getCustomSnackTypes}
+            addCustom={addSnackType}
+            addLabel="新增零食種類"
+            addPlaceholder="輸入新的零食種類"
+          />
         )}
 
         {needsAmount && (

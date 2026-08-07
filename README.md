@@ -14,16 +14,16 @@
 
 ## 資料結構
 
-主要資料表 `entries`，每一筆是一個事件（吃飯 / 喝水 / 尿尿 / 便便 / 點除蟲藥 / 量體重 / 活動），可以一天記錄多次，畫面上會依日期加總顯示：
+主要資料表 `entries`，每一筆是一個事件（吃飯 / 喝水 / 尿尿 / 便便 / 點除蟲藥 / 量體重 / 活動 / 零食），可以一天記錄多次，畫面上會依日期加總顯示：
 
 | 欄位 | 說明 |
 | --- | --- |
-| `type` | `food` / `water` / `pee` / `poop` / `flea` / `weight` / `activity` |
-| `amount` | 數量（食物用 g、喝水用 ml、體重用 kg、尿尿/便便用次數，除蟲藥、活動可留空） |
-| `note` | 備註，例如食物種類、便便軟硬程度、除蟲藥品名、活動類型 |
+| `type` | `food` / `water` / `pee` / `poop` / `flea` / `weight` / `activity` / `snack` |
+| `amount` | 數量（食物用 g、喝水用 ml、體重用 kg、尿尿/便便用次數，除蟲藥、活動、零食可留空） |
+| `note` | 備註，例如食物種類、便便軟硬程度、除蟲藥品名、活動類型、零食種類 |
 | `occurred_at` | 發生時間（尿尿/便便沒有精確時間，用上午/中午/下午/晚上換算成代表時間存入） |
 
-另外還有 `push_subscriptions`（瀏覽器推播訂閱資訊）、`reminder_state`（避免同一次到期重複推播）、`settings`（單一設定值，目前用來存到家日期、飲水起始量）、`food_brands`（食物種類快捷選項）、`activity_types`（活動類型快捷選項）五張輔助表。完整定義見 [`supabase/schema.sql`](./supabase/schema.sql)。
+另外還有 `push_subscriptions`（瀏覽器推播訂閱資訊）、`reminder_state`（避免同一次到期重複推播）、`settings`（單一設定值，目前用來存到家日期、飲水起始量）、`food_brands`（食物種類快捷選項）、`activity_types`（活動類型快捷選項）、`snack_types`（零食種類快捷選項）六張輔助表。完整定義見 [`supabase/schema.sql`](./supabase/schema.sql)。
 
 Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定檔名 `mocha.*`，上傳新照片會直接覆蓋舊的），設定見 [`supabase/storage.sql`](./supabase/storage.sql)。
 
@@ -90,6 +90,14 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 - 按「+」新增，上方有快捷類型按鈕，預設是「剪指甲」、「剃腳毛」，選一個會自動填入備註欄
 - 按類型按鈕旁的「+」可以輸入新的活動名稱，存進 `activity_types` 資料表後，之後每次新增活動都會看到這個新類型（跟食物種類的邏輯一樣）
 - 卡片上顯示最近一次的活動類型與日期
+
+## 零食
+
+「活動」卡片下方多一張「零食」卡片，記錄方式跟活動完全一樣：
+
+- 按「+」新增，上方有快捷類型按鈕，預設是「肉泥」、「化毛肉泥」、「潔牙餅」、「凍乾」，選一個會自動填入備註欄
+- 按類型按鈕旁的「+」可以輸入新的零食名稱，存進 `snack_types` 資料表後，之後每次新增零食都會看到這個新類型
+- 卡片上顯示最近一次的零食種類與日期
 
 ## 自動更新資料（不用手動滑掉重開）
 
@@ -170,8 +178,8 @@ app/settings                  # 設定頁（側邊選單點「設定」進入）
 app/reports                   # 報表頁（側邊選單點「報表」進入），食物/便便/尿尿週或月比較
 app/api/cron/flea-reminder    # Vercel Cron 呼叫的除蟲藥提醒檢查（每天）
 app/api/cron/weight-reminder  # Vercel Cron 呼叫的體重提醒（每週三）
-components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、活動卡、報表卡、今日紀錄格、新增紀錄彈窗、扣除食物剩量彈窗、量水量彈窗、清單、日期切換）
-lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、飲水量起始值追蹤、食物/活動類型快捷選項、App 恢復前景時自動刷新、共用的推播發送邏輯
+components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、活動/零食卡、快捷選項按鈕、報表卡、今日紀錄格、新增紀錄彈窗、扣除食物剩量彈窗、量水量彈窗、清單、日期切換）
+lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、飲水量起始值追蹤、食物/活動/零食類型快捷選項、App 恢復前景時自動刷新、共用的推播發送邏輯
 public/sw.js                  # 接收推播通知的 Service Worker
 supabase/schema.sql           # entries / push_subscriptions / reminder_state / settings 資料表結構
 supabase/storage.sql          # 頭像照片 storage bucket 與權限

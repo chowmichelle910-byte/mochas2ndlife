@@ -3,7 +3,7 @@
 
 create table if not exists entries (
   id uuid primary key default gen_random_uuid(),
-  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity')),
+  type text not null check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity', 'snack')),
   amount numeric,
   note text,
   occurred_at timestamptz not null default now(),
@@ -13,7 +13,7 @@ create table if not exists entries (
 -- 如果資料表是舊版建立的（缺少較新的 type），把限制條件更新成最新版本。
 alter table entries drop constraint if exists entries_type_check;
 alter table entries add constraint entries_type_check
-  check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity'));
+  check (type in ('food', 'water', 'pee', 'poop', 'flea', 'weight', 'activity', 'snack'));
 
 create index if not exists entries_occurred_at_idx on entries (occurred_at desc);
 
@@ -125,3 +125,22 @@ create policy "activity_types public insert" on activity_types for insert with c
 
 drop policy if exists "activity_types public update" on activity_types;
 create policy "activity_types public update" on activity_types for update using (true);
+
+-- 零食種類快捷選項（例如「肉泥」「化毛肉泥」「潔牙餅」「凍乾」），使用者可以自己新增
+
+create table if not exists snack_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  created_at timestamptz not null default now()
+);
+
+alter table snack_types enable row level security;
+
+drop policy if exists "snack_types public read" on snack_types;
+create policy "snack_types public read" on snack_types for select using (true);
+
+drop policy if exists "snack_types public insert" on snack_types;
+create policy "snack_types public insert" on snack_types for insert with check (true);
+
+drop policy if exists "snack_types public update" on snack_types;
+create policy "snack_types public update" on snack_types for update using (true);

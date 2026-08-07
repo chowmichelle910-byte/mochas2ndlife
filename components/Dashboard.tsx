@@ -13,7 +13,7 @@ import WaterMeasureSheet from "@/components/WaterMeasureSheet";
 import EntryList from "@/components/EntryList";
 import FleaReminderCard from "@/components/FleaReminderCard";
 import WeightCard from "@/components/WeightCard";
-import ActivityCard from "@/components/ActivityCard";
+import LatestEntryCard from "@/components/LatestEntryCard";
 import SideMenu from "@/components/SideMenu";
 import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
@@ -28,6 +28,7 @@ export default function Dashboard() {
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
   const [weightRefreshKey, setWeightRefreshKey] = useState(0);
   const [activityRefreshKey, setActivityRefreshKey] = useState(0);
+  const [snackRefreshKey, setSnackRefreshKey] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const visibilityKey = useVisibilityRefresh();
 
@@ -70,6 +71,9 @@ export default function Dashboard() {
     }
     if (input.type === "activity") {
       setActivityRefreshKey((k) => k + 1);
+    }
+    if (input.type === "snack") {
+      setSnackRefreshKey((k) => k + 1);
     }
   }
 
@@ -140,9 +144,24 @@ export default function Dashboard() {
         onLogClick={() => setAddingType("flea")}
       />
 
-      <ActivityCard
-        refreshKey={activityRefreshKey + visibilityKey}
+      <LatestEntryCard
+        type="activity"
+        emoji="✂️"
+        label="活動"
+        refreshKey={activityRefreshKey}
         onLogClick={() => setAddingType("activity")}
+        addLabel="新增活動紀錄"
+        emptyLabel="還沒有紀錄，點右上角「+」新增第一筆活動紀錄"
+      />
+
+      <LatestEntryCard
+        type="snack"
+        emoji="🍪"
+        label="零食"
+        refreshKey={snackRefreshKey}
+        onLogClick={() => setAddingType("snack")}
+        addLabel="新增零食紀錄"
+        emptyLabel="還沒有紀錄，點右上角「+」新增第一筆零食紀錄"
       />
 
       {addingType && (
