@@ -6,9 +6,11 @@ import { ENTRY_META, Entry } from "@/lib/types";
 export default function EntryList({
   entries,
   onDelete,
+  onEdit,
 }: {
   entries: Entry[];
   onDelete: (id: string) => void;
+  onEdit: (entry: Entry) => void;
 }) {
   if (entries.length === 0) {
     return (
@@ -29,7 +31,13 @@ export default function EntryList({
         return (
           <li
             key={entry.id}
-            className="flex items-center gap-3 rounded-3xl bg-white p-3 shadow-sm"
+            role="button"
+            tabIndex={0}
+            onClick={() => onEdit(entry)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") onEdit(entry);
+            }}
+            className="flex items-center gap-3 rounded-3xl bg-white p-3 shadow-sm transition hover:bg-stone-50"
           >
             <span className={`flex h-9 w-9 items-center justify-center rounded-full text-lg ${meta.color}`}>
               {meta.emoji}
@@ -51,7 +59,10 @@ export default function EntryList({
             <button
               type="button"
               aria-label="刪除"
-              onClick={() => onDelete(entry.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(entry.id);
+              }}
               className="rounded-full p-1 text-stone-300 hover:bg-red-50 hover:text-red-500"
             >
               ✕

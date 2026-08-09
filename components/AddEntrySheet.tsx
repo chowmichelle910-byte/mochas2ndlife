@@ -1,17 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { ENTRY_META, EntryInput, EntryType } from "@/lib/types";
+import { ENTRY_META, Entry, EntryInput, EntryType } from "@/lib/types";
 import { addFoodBrand, getCustomFoodBrands } from "@/lib/foodBrands";
 import { addActivityType, getCustomActivityTypes } from "@/lib/activityTypes";
 import { addSnackType, getCustomSnackTypes } from "@/lib/snackTypes";
 import QuickSelectChips from "@/components/QuickSelectChips";
 
-function nowLocalInputValue(): string {
-  const d = new Date();
+function toLocalInputValue(date: Date): string {
+  const d = new Date(date);
   d.setSeconds(0, 0);
   d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
   return d.toISOString().slice(0, 16);
+}
+
+function nowLocalInputValue(): string {
+  return toLocalInputValue(new Date());
 }
 
 const PERIODS: { key: string; label: string; hour: number }[] = [
@@ -29,18 +33,26 @@ function defaultPeriodKey(): string {
   return "evening";
 }
 
+function periodKeyForHour(hour: number): string {
+  return PERIODS.find((p) => p.hour === hour)?.key ?? defaultPeriodKey();
+}
+
 const DEFAULT_FOOD_BRANDS = ["皇家乾糧", "皇家罐罐"];
 const DEFAULT_ACTIVITY_TYPES = ["剪指甲", "剃腳毛"];
 const DEFAULT_SNACK_TYPES = ["肉泥", "化毛肉泥", "潔牙餅", "凍乾"];
 
 export default function AddEntrySheet({
   type,
+  initialEntry,
   onClose,
   onSubmit,
+  onUpdate,
 }: {
   type: EntryType;
+  initialEntry?: Entry;
   onClose: () => void;
   onSubmit: (input: EntryInput) => Promise<void>;
+  onUpdate?: (id: string, input: EntryInput) => Promise<void>;
 }) {
   const meta = ENTRY_META[type];
   const usesPeriodPicker = type === "pee" || type === "poop";
@@ -50,12 +62,22 @@ export default function AddEntrySheet({
   const needsAmount =
     !usesPeriodPicker && type !== "flea" && type !== "activity" && type !== "snack";
   const isDecimal = type === "weight";
+  const isEditing = !!initialEntry;
 
-  const [amount, setAmount] = useState("");
-  const [count, setCount] = useState(1);
-  const [period, setPeriod] = useState(defaultPeriodKey());
-  const [note, setNote] = useState("");
-  const [occurredAt, setOccurredAt] = useState(nowLocalInputValue());
+  const [baseDate] = useState(() =>
+    initialEntry ? new Date(initialEntry.occurred_at) : new Date()
+  );
+  const [amount, setAmount] = useState(
+    initialEntry?.amount != null ? String(initialEntry.amount) : ""
+  );
+  const [count, setCount] = useState(initialEntry?.amount ?? 1);
+  const [period, setPeriod] = useState(
+    initialEntry ? periodKeyForHour(baseDate.getHours()) : defaultPeriodKey()
+  );
+  const [note, setNote] = useState(initialEntry?.note ?? "");
+  const [occurredAt, setOccurredAt] = useState(
+    initialEntry ? toLocalInputValue(baseDate) : nowLocalInputValue()
+  );
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -67,11 +89,10 @@ export default function AddEntrySheet({
 
       if (usesPeriodPicker) {
         const chosen = PERIODS.find((p) => p.key === period) ?? PERIODS[0];
-        const now = new Date();
         const occurredDate = new Date(
-          now.getFullYear(),
-          now.getMonth(),
-          now.getDate(),
+          baseDate.getFullYear(),
+          baseDate.getMonth(),
+          baseDate.getDate(),
           chosen.hour,
           0,
           0
@@ -83,12 +104,18 @@ export default function AddEntrySheet({
         amountValue = needsAmount && amount !== "" ? Number(amount) : null;
       }
 
-      await onSubmit({
+      const input: EntryInput = {
         type,
         amount: amountValue,
         note: note.trim() || null,
         occurred_at,
-      });
+      };
+
+      if (isEditing && onUpdate) {
+        await onUpdate(initialEntry.id, input);
+      } else {
+        await onSubmit(input);
+      }
       onClose();
     } finally {
       setSubmitting(false);
@@ -107,7 +134,7 @@ export default function AddEntrySheet({
       >
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-stone-800">
-            {meta.emoji} 新增{meta.label}紀錄
+            {meta.emoji} {isEditing ? "編輯" : "新增"}{meta.label}紀錄
           </h2>
           <button
             type="button"
@@ -256,7 +283,7 @@ export default function AddEntrySheet({
           disabled={submitting}
           className="rounded-xl bg-orange-400 py-2.5 font-medium text-white transition hover:bg-orange-500 disabled:opacity-50"
         >
-          {submitting ? "儲存中..." : "儲存"}
+          {submitting ? "儲存中..." : isEditing ? "更新" : "儲存"}
         </button>
       </form>
     </div>

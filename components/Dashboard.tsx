@@ -23,6 +23,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addingType, setAddingType] = useState<EntryType | null>(null);
+  const [editingEntry, setEditingEntry] = useState<Entry | null>(null);
   const [subtractingFood, setSubtractingFood] = useState(false);
   const [measuringWater, setMeasuringWater] = useState(false);
   const [fleaRefreshKey, setFleaRefreshKey] = useState(0);
@@ -56,6 +57,21 @@ export default function Dashboard() {
     loadEntries(dateKey);
   }, [dateKey, loadEntries, visibilityKey]);
 
+  function bumpRefreshKeys(type: EntryType) {
+    if (type === "flea") {
+      setFleaRefreshKey((k) => k + 1);
+    }
+    if (type === "weight") {
+      setWeightRefreshKey((k) => k + 1);
+    }
+    if (type === "activity") {
+      setActivityRefreshKey((k) => k + 1);
+    }
+    if (type === "snack") {
+      setSnackRefreshKey((k) => k + 1);
+    }
+  }
+
   async function handleAdd(input: EntryInput) {
     const { error: insertError } = await supabase.from("entries").insert(input);
     if (insertError) {
@@ -63,18 +79,17 @@ export default function Dashboard() {
       return;
     }
     await loadEntries(dateKey);
-    if (input.type === "flea") {
-      setFleaRefreshKey((k) => k + 1);
+    bumpRefreshKeys(input.type);
+  }
+
+  async function handleUpdate(id: string, input: EntryInput) {
+    const { error: updateError } = await supabase.from("entries").update(input).eq("id", id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
     }
-    if (input.type === "weight") {
-      setWeightRefreshKey((k) => k + 1);
-    }
-    if (input.type === "activity") {
-      setActivityRefreshKey((k) => k + 1);
-    }
-    if (input.type === "snack") {
-      setSnackRefreshKey((k) => k + 1);
-    }
+    await loadEntries(dateKey);
+    bumpRefreshKeys(input.type);
   }
 
   async function handleDelete(id: string) {
@@ -130,7 +145,7 @@ export default function Dashboard() {
             載入中...
           </div>
         ) : (
-          <EntryList entries={entries} onDelete={handleDelete} />
+          <EntryList entries={entries} onDelete={handleDelete} onEdit={setEditingEntry} />
         )}
       </div>
 
@@ -164,11 +179,16 @@ export default function Dashboard() {
         emptyLabel="還沒有紀錄，點右上角「+」新增第一筆零食紀錄"
       />
 
-      {addingType && (
+      {(addingType || editingEntry) && (
         <AddEntrySheet
-          type={addingType}
-          onClose={() => setAddingType(null)}
+          type={editingEntry ? editingEntry.type : addingType!}
+          initialEntry={editingEntry ?? undefined}
+          onClose={() => {
+            setAddingType(null);
+            setEditingEntry(null);
+          }}
           onSubmit={handleAdd}
+          onUpdate={handleUpdate}
         />
       )}
 
