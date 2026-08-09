@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase";
 import { addDays, dateKeyToRange, toDateKey } from "@/lib/date";
 
-export type ReportType = "food" | "poop" | "pee";
+export type ReportType = "food" | "water" | "poop" | "pee";
 
 export interface ReportSeries {
   days: string[];
@@ -12,7 +12,7 @@ export interface ReportSeries {
 }
 
 function fallbackAmount(type: ReportType): number {
-  return type === "food" ? 0 : 1;
+  return type === "food" || type === "water" ? 0 : 1;
 }
 
 export async function fetchReportSeries(

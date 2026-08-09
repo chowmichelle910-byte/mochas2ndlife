@@ -29,6 +29,15 @@ const CONFIG: Record<
     text: "text-amber-600",
     badge: "bg-amber-100 text-amber-700",
   },
+  water: {
+    label: "喝水",
+    emoji: "💧",
+    unit: "ml",
+    iconBg: "bg-blue-100",
+    bar: "bg-blue-300",
+    text: "text-blue-600",
+    badge: "bg-blue-100 text-blue-700",
+  },
   poop: {
     label: "便便",
     emoji: "💩",
@@ -99,6 +108,7 @@ export default function ReportCard({
             ? `，比上${compareLabel}少`
             : `，跟上${compareLabel}差不多`;
     if (type === "food") return `Mocha 平均每天吃了 ${avgRounded} g${trend}`;
+    if (type === "water") return `Mocha 平均每天喝了 ${avgRounded} ml${trend}`;
     return `Mocha 平均每天${cfg.label}了 ${avgRounded} 次${trend}`;
   })();
 

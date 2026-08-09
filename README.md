@@ -122,6 +122,15 @@ Mocha 的頭像照片存在 Supabase Storage 的 `avatars` bucket 裡（固定�
 - 如果上一個週期完全沒有紀錄，會顯示「新紀錄」而不是漲跌幅（避免除以 0 算出奇怪的數字）
 - 「自訂期間」可以自己選開始跟結束日期（不能選未來的日期），適合想看特定那幾天的狀況時使用
 
+## AI 分析
+
+報表頁最下方有一張「AI 分析」卡片，按「開始分析」會把目前檢視期間的食物、飲水、體重、便便、尿尿數據整理起來，交給 Google Gemini（免費方案）生成一段繁體中文分析，說明這些數據之間可能有什麼關聯（例如食量增加是否對應體重上升），並提醒有沒有需要留意的地方。
+
+- 每次都是使用者主動按按鈕才會呼叫 AI（不會自動觸發），避免浪費免費額度
+- 切換「1週」/「1個月」/「自訂期間」分頁後，分析結果會清空，需要重新按一次「開始分析」
+- 分析內容只是根據紀錄數據做的推論、不是醫療診斷，如果數字異常還是建議帶去給獸醫看
+- 需要設定 `GEMINI_API_KEY` 環境變數才能使用，申請方式見下方部署步驟
+
 ## 1. 建立 Supabase 專案
 
 1. 到 [supabase.com](https://supabase.com/) 建立一個新專案。
@@ -144,12 +153,22 @@ npx web-push generate-vapid-keys
 
 會得到一組 Public Key 和 Private Key，等一下本機開發跟 Vercel 都要用到。
 
-## 3. 本機開發
+## 3. 申請 AI 分析用的 Gemini API Key（免費）
+
+報表頁的「AI 分析」功能需要一組 Google Gemini API Key：
+
+1. 到 [Google AI Studio](https://aistudio.google.com/apikey)（用 Google 帳號登入）
+2. 按「Create API key」，選一個 Google Cloud 專案（沒有的話會自動幫你建一個）
+3. 複製產生的 API Key，等一下本機開發跟 Vercel 都要用到
+
+> Gemini 有免費方案（有次數限制，但這個 app 是個人／家人用量，需要按到「開始分析」才會呼叫一次，應該不會超過額度），不需要绑信用卡。如果不需要 AI 分析功能，可以跳過這步，`GEMINI_API_KEY` 留空即可，按「開始分析」時會顯示錯誤訊息但不影響其他功能。
+
+## 4. 本機開發
 
 ```bash
 npm install
 cp .env.local.example .env.local
-# 編輯 .env.local，填入 Supabase URL / anon key，以及上一步產生的 VAPID 金鑰、自訂的 CRON_SECRET
+# 編輯 .env.local，填入 Supabase URL / anon key、VAPID 金鑰、自訂的 CRON_SECRET，以及上一步的 GEMINI_API_KEY
 npm run dev
 ```
 
@@ -159,7 +178,7 @@ npm run dev
 > `curl -H "Authorization: Bearer 你的CRON_SECRET" http://localhost:3000/api/cron/flea-reminder`
 > `curl -H "Authorization: Bearer 你的CRON_SECRET" http://localhost:3000/api/cron/weight-reminder`
 
-## 4. 部署到 Vercel
+## 5. 部署到 Vercel
 
 1. 把這個 repo 推到 GitHub（已經在這個 repo 裡了）。
 2. 到 [vercel.com](https://vercel.com/) → **Add New Project** → 選擇這個 GitHub repo。
@@ -170,6 +189,7 @@ npm run dev
    - `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
    - `VAPID_PRIVATE_KEY`
    - `CRON_SECRET`（自己取一組隨機字串，Vercel 呼叫 Cron Job 時會自動帶上這個值驗證身分）
+   - `GEMINI_API_KEY`（上一步申請的 Gemini API Key，沒有的話 AI 分析功能會顯示錯誤，但不影響其他功能）
 5. 點 **Deploy**，完成後即可透過 Vercel 提供的網址使用。
 
 之後每次 push 到部署分支，Vercel 都會自動重新部署；`vercel.json` 裡設定的兩個 Cron Job 也會跟著自動排程（除蟲藥每天、體重每週三，都是台灣時間早上 9 點檢查）。
@@ -182,7 +202,8 @@ app/settings                  # 設定頁（側邊選單點「設定」進入）
 app/reports                   # 報表頁（側邊選單點「報表」進入），食物/便便/尿尿週或月比較
 app/api/cron/flea-reminder    # Vercel Cron 呼叫的除蟲藥提醒檢查（每天）
 app/api/cron/weight-reminder  # Vercel Cron 呼叫的體重提醒（每週三）
-components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、活動/零食卡、快捷選項按鈕、報表卡、今日紀錄格、新增紀錄彈窗、扣除食物剩量彈窗、量水量彈窗、清單、日期切換）
+app/api/ai-analysis           # 報表頁「AI 分析」按鈕呼叫的 API，整理數據後轉發給 Gemini
+components/                   # 前端元件（側邊選單、寵物資訊卡、推播開關、體重卡、除蟲藥提醒卡、活動/零食卡、快捷選項按鈕、報表卡、AI 分析卡、今日紀錄格、新增/編輯紀錄彈窗、扣除食物剩量彈窗、量水量彈窗、清單、日期切換）
 lib/                          # Supabase client、型別定義、日期工具、頭像上傳、推播訂閱、報表統計、飲水量起始值追蹤、食物/活動/零食類型快捷選項、App 恢復前景時自動刷新、共用的推播發送邏輯
 public/sw.js                  # 接收推播通知的 Service Worker
 supabase/schema.sql           # entries / push_subscriptions / reminder_state / settings 資料表結構

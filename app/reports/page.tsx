@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import ReportCard from "@/components/ReportCard";
+import AIAnalysisCard from "@/components/AIAnalysisCard";
 import { addDays, daysBetween, toDateKey } from "@/lib/date";
 
 const RANGE_TABS = [
@@ -96,6 +97,12 @@ export default function ReportsPage() {
         rangeDays={effective.days}
         endDateKey={effective.endDateKey}
         compareLabel={effective.compareLabel}
+      />
+
+      <AIAnalysisCard
+        key={`${effective.days}-${effective.endDateKey}`}
+        rangeDays={effective.days}
+        endDateKey={effective.endDateKey}
       />
     </main>
   );
