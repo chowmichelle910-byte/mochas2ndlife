@@ -31,9 +31,10 @@ export default function SubtractFoodSheet({
     setError(null);
     try {
       const newAmount = Math.max(0, (selected.amount ?? 0) - leftoverAmount);
+      const newNote = `${(selected.note ?? "").trim()} (已扣除${leftoverAmount}g)`.trim();
       const { error: updateError } = await supabase
         .from("entries")
-        .update({ amount: newAmount })
+        .update({ amount: newAmount, note: newNote })
         .eq("id", selected.id);
       if (updateError) throw updateError;
       onSaved();
