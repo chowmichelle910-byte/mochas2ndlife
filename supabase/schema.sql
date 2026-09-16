@@ -30,6 +30,9 @@ create policy "public insert" on entries for insert with check (true);
 drop policy if exists "public delete" on entries;
 create policy "public delete" on entries for delete using (true);
 
+drop policy if exists "public update" on entries;
+create policy "public update" on entries for update using (true) with check (true);
+
 -- 除蟲藥推播提醒用的資料表
 
 create table if not exists push_subscriptions (
