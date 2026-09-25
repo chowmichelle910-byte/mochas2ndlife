@@ -14,8 +14,11 @@ function toLocalInputValue(date: Date): string {
   return d.toISOString().slice(0, 16);
 }
 
-function nowLocalInputValue(): string {
-  return toLocalInputValue(new Date());
+function combineDateKeyWithCurrentTime(dateKey: string): Date {
+  const now = new Date();
+  const combined = new Date(`${dateKey}T00:00:00`);
+  combined.setHours(now.getHours(), now.getMinutes(), 0, 0);
+  return combined;
 }
 
 const PERIODS: { key: string; label: string; hour: number }[] = [
@@ -44,12 +47,14 @@ const DEFAULT_SNACK_TYPES = ["肉泥", "化毛肉泥", "潔牙餅", "凍乾"];
 export default function AddEntrySheet({
   type,
   initialEntry,
+  selectedDateKey,
   onClose,
   onSubmit,
   onUpdate,
 }: {
   type: EntryType;
   initialEntry?: Entry;
+  selectedDateKey: string;
   onClose: () => void;
   onSubmit: (input: EntryInput) => Promise<void>;
   onUpdate?: (id: string, input: EntryInput) => Promise<void>;
@@ -65,7 +70,7 @@ export default function AddEntrySheet({
   const isEditing = !!initialEntry;
 
   const [baseDate] = useState(() =>
-    initialEntry ? new Date(initialEntry.occurred_at) : new Date()
+    initialEntry ? new Date(initialEntry.occurred_at) : combineDateKeyWithCurrentTime(selectedDateKey)
   );
   const [amount, setAmount] = useState(
     initialEntry?.amount != null ? String(initialEntry.amount) : ""
@@ -75,9 +80,7 @@ export default function AddEntrySheet({
     initialEntry ? periodKeyForHour(baseDate.getHours()) : defaultPeriodKey()
   );
   const [note, setNote] = useState(initialEntry?.note ?? "");
-  const [occurredAt, setOccurredAt] = useState(
-    initialEntry ? toLocalInputValue(baseDate) : nowLocalInputValue()
-  );
+  const [occurredAt, setOccurredAt] = useState(() => toLocalInputValue(baseDate));
   const [submitting, setSubmitting] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {

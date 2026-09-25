@@ -183,6 +183,7 @@ export default function Dashboard() {
         <AddEntrySheet
           type={editingEntry ? editingEntry.type : addingType!}
           initialEntry={editingEntry ?? undefined}
+          selectedDateKey={dateKey}
           onClose={() => {
             setAddingType(null);
             setEditingEntry(null);
