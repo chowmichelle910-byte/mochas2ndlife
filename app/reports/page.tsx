@@ -100,7 +100,6 @@ export default function ReportsPage() {
       />
 
       <AIAnalysisCard
-        key={`${effective.days}-${effective.endDateKey}`}
         rangeDays={effective.days}
         endDateKey={effective.endDateKey}
       />

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ENTRY_META, Entry, EntryInput, EntryType } from "@/lib/types";
-import { addFoodBrand, getCustomFoodBrands } from "@/lib/foodBrands";
+import { addFoodBrand, FoodType, getCustomFoodBrands, listFoodTypes } from "@/lib/foodBrands";
 import { addActivityType, getCustomActivityTypes } from "@/lib/activityTypes";
 import { addSnackType, getCustomSnackTypes } from "@/lib/snackTypes";
 import QuickSelectChips from "@/components/QuickSelectChips";
@@ -82,6 +82,21 @@ export default function AddEntrySheet({
   const [note, setNote] = useState(initialEntry?.note ?? "");
   const [occurredAt, setOccurredAt] = useState(() => toLocalInputValue(baseDate));
   const [submitting, setSubmitting] = useState(false);
+  const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
+
+  useEffect(() => {
+    if (!usesBrandChips) return;
+    listFoodTypes().then(setFoodTypes);
+    // only fetch once on mount — this component is remounted fresh each time the sheet opens
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const selectedFoodType = foodTypes.find((f) => f.name === note) ?? null;
+  const canPortions =
+    usesBrandChips &&
+    selectedFoodType?.calorie_mode === "percan" &&
+    selectedFoodType.grams_per_can != null &&
+    selectedFoodType.grams_per_can > 0;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -186,6 +201,30 @@ export default function AddEntrySheet({
             addLabel="新增零食種類"
             addPlaceholder="輸入新的零食種類"
           />
+        )}
+
+        {canPortions && selectedFoodType?.grams_per_can != null && (
+          <div className="flex flex-col gap-2 text-sm text-stone-600">
+            份量快選
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "一罐", fraction: 1 },
+                { label: "半罐", fraction: 0.5 },
+                { label: "三分之一罐", fraction: 1 / 3 },
+              ].map(({ label, fraction }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() =>
+                    setAmount(String(Math.round(selectedFoodType.grams_per_can! * fraction)))
+                  }
+                  className="rounded-xl bg-stone-50 py-2 text-sm text-stone-600 transition hover:bg-orange-50 hover:text-orange-600"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         )}
 
         {needsAmount && (

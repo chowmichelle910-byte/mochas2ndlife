@@ -1,5 +1,7 @@
 import Link from "next/link";
 import PushReminderToggle from "@/components/PushReminderToggle";
+import CatProfileSettings from "@/components/CatProfileSettings";
+import FoodCalorieSettings from "@/components/FoodCalorieSettings";
 
 export default function SettingsPage() {
   return (
@@ -18,6 +20,16 @@ export default function SettingsPage() {
       <div>
         <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">通知</h2>
         <PushReminderToggle />
+      </div>
+
+      <div>
+        <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">Mocha 的生日</h2>
+        <CatProfileSettings />
+      </div>
+
+      <div>
+        <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">食物卡路里設定</h2>
+        <FoodCalorieSettings />
       </div>
     </main>
   );

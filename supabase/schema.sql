@@ -99,6 +99,12 @@ create table if not exists food_brands (
   created_at timestamptz not null default now()
 );
 
+-- 卡路里設定：每 100g 幾多卡路里（適合乾糧之類秤重的食物），或每罐幾多卡路里 + 每罐幾多g（適合罐頭，記錄時可以選一罐/半罐/三分之一罐）
+alter table food_brands add column if not exists calorie_mode text check (calorie_mode in ('per100g', 'percan'));
+alter table food_brands add column if not exists kcal_per_100g numeric;
+alter table food_brands add column if not exists kcal_per_can numeric;
+alter table food_brands add column if not exists grams_per_can numeric;
+
 alter table food_brands enable row level security;
 
 drop policy if exists "food_brands public read" on food_brands;

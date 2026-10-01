@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { addDays, dateKeyToRange, toDateKey } from "@/lib/date";
 import { fetchReportSeries, ReportSeries } from "@/lib/reports";
+import { ageInYears, estimateDailyKcalNeed, getCatBirthdate } from "@/lib/catProfile";
+import { setCachedAnalysis } from "@/lib/aiAnalysisCache";
 
 export const maxDuration = 30;
 
@@ -47,6 +49,91 @@ async function fetchWeightTrend(rangeDays: number, endDateKey: string): Promise<
   };
 }
 
+interface FoodCalorieIntake {
+  avgKcalPerDay: number | null;
+  hasUnknownFoodTypes: boolean;
+}
+
+async function fetchFoodCalorieIntake(
+  rangeDays: number,
+  endDateKey: string
+): Promise<FoodCalorieIntake> {
+  const startCurrent = addDays(endDateKey, -(rangeDays - 1));
+  const { start } = dateKeyToRange(startCurrent);
+  const { end } = dateKeyToRange(endDateKey);
+
+  const [{ data: entries, error: entriesError }, { data: foodTypes, error: foodTypesError }] =
+    await Promise.all([
+      supabase
+        .from("entries")
+        .select("amount, note, occurred_at")
+        .eq("type", "food")
+        .gte("occurred_at", start)
+        .lte("occurred_at", end),
+      supabase
+        .from("food_brands")
+        .select("name, calorie_mode, kcal_per_100g, kcal_per_can, grams_per_can"),
+    ]);
+
+  if (entriesError) throw entriesError;
+  if (foodTypesError) throw foodTypesError;
+
+  const byName = new Map((foodTypes ?? []).map((f) => [f.name as string, f]));
+  const byDay = new Map<string, number>();
+  let hasUnknownFoodTypes = false;
+
+  for (const row of entries ?? []) {
+    const amount = (row.amount as number | null) ?? 0;
+    if (amount <= 0) continue;
+    const ft = row.note ? byName.get(row.note as string) : undefined;
+    let kcal = 0;
+    if (ft?.calorie_mode === "per100g" && ft.kcal_per_100g != null) {
+      kcal = (amount / 100) * ft.kcal_per_100g;
+    } else if (ft?.calorie_mode === "percan" && ft.kcal_per_can != null && ft.grams_per_can) {
+      kcal = (amount / ft.grams_per_can) * ft.kcal_per_can;
+    } else {
+      hasUnknownFoodTypes = true;
+      continue;
+    }
+    const key = toDateKey(new Date(row.occurred_at as string));
+    byDay.set(key, (byDay.get(key) ?? 0) + kcal);
+  }
+
+  if (byDay.size === 0) return { avgKcalPerDay: null, hasUnknownFoodTypes };
+  const total = [...byDay.values()].reduce((a, b) => a + b, 0);
+  return { avgKcalPerDay: total / byDay.size, hasUnknownFoodTypes };
+}
+
+interface DailyKcalNeed {
+  need: number | null;
+  weightKg: number | null;
+  ageYears: number | null;
+}
+
+async function fetchDailyKcalNeed(endDateKey: string): Promise<DailyKcalNeed> {
+  const { end } = dateKeyToRange(endDateKey);
+  const [birthdateKey, { data: weightRows, error: weightError }] = await Promise.all([
+    getCatBirthdate(),
+    supabase
+      .from("entries")
+      .select("amount")
+      .eq("type", "weight")
+      .lte("occurred_at", end)
+      .order("occurred_at", { ascending: false })
+      .limit(1),
+  ]);
+
+  if (weightError) throw weightError;
+  const weightKg = (weightRows?.[0]?.amount as number | undefined) ?? null;
+
+  if (!birthdateKey || weightKg == null) {
+    return { need: null, weightKg, ageYears: null };
+  }
+
+  const ageYears = ageInYears(birthdateKey, endDateKey);
+  return { need: estimateDailyKcalNeed(weightKg, ageYears), weightKg, ageYears };
+}
+
 function formatChange(changePercent: number | null): string {
   if (changePercent === null) return "（沒有上一期資料可比較）";
   const sign = changePercent > 0 ? "+" : "";
@@ -61,8 +148,11 @@ function buildPrompt(params: {
   poop: ReportSeries;
   pee: ReportSeries;
   weightTrend: WeightTrend;
+  calorieIntake: FoodCalorieIntake;
+  kcalNeed: DailyKcalNeed;
 }): string {
-  const { rangeDays, endDateKey, food, water, poop, pee, weightTrend } = params;
+  const { rangeDays, endDateKey, food, water, poop, pee, weightTrend, calorieIntake, kcalNeed } =
+    params;
 
   const weightLines: string[] = [];
   if (weightTrend.baseline) {
@@ -82,11 +172,33 @@ function buildPrompt(params: {
   const weightSection =
     weightLines.length > 0 ? weightLines.join("\n") : "- 體重：這段期間沒有量體重紀錄";
 
-  return `你是一位親切的貓咪照護助理。以下是我家貓咪 Mocha 最近 ${rangeDays} 天（到 ${endDateKey} 為止）的健康紀錄數據，請用繁體中文寫一段簡短分析（約 150-250 字），說明食物、飲水、體重、如廁狀況彼此之間可能有什麼關聯（例如食量增加是否對應體重上升），並指出有沒有需要留意的地方。
+  const calorieLines: string[] = [];
+  if (calorieIntake.avgKcalPerDay != null) {
+    calorieLines.push(
+      `本期平均每日攝取卡路里：約 ${Math.round(calorieIntake.avgKcalPerDay)} kcal/天` +
+        (calorieIntake.hasUnknownFoodTypes
+          ? "（部分食物種類還沒設定卡路里，這個數字可能被低估）"
+          : "")
+    );
+  } else {
+    calorieLines.push(
+      "本期攝取卡路里：無法計算（食物紀錄的種類都還沒在設定頁設定卡路里，或這段期間沒有食物紀錄）"
+    );
+  }
+  if (kcalNeed.need != null) {
+    calorieLines.push(
+      `估計每日所需卡路里：約 ${Math.round(kcalNeed.need)} kcal/天（根據體重 ${kcalNeed.weightKg}kg、年齡約 ${kcalNeed.ageYears?.toFixed(1)} 歲估算，是概略值，不是精確醫療數字）`
+    );
+  } else {
+    calorieLines.push("估計每日所需卡路里：無法計算（尚未在設定頁填寫生日，或還沒有體重紀錄）");
+  }
+  const calorieSection = calorieLines.join("\n");
+
+  return `你是一位親切的貓咪照護助理。以下是我家貓咪 Mocha 最近 ${rangeDays} 天（到 ${endDateKey} 為止）的健康紀錄數據，請用繁體中文寫一段簡短分析（約 150-250 字），說明食物、飲水、體重、如廁狀況、卡路里攝取量跟所需量彼此之間可能有什麼關聯（例如攝取的卡路里是否超過或低於所需量、這是否能解釋體重變化），並指出有沒有需要留意的地方。
 
 規則：
 - 只根據下面提供的數據做推論，不要編造沒有的數字
-- 如果資料量太少無法下結論，誠實說明資料不足，不要硬掰
+- 如果某項資料缺失或不足以下結論，誠實說明，不要硬掰
 - 這不是醫療診斷，只是觀察與提醒，若有異常建議諮詢獸醫
 - 語氣自然、像在跟貓咪的家人聊天，不要用條列式，直接寫成一段話
 
@@ -96,6 +208,7 @@ function buildPrompt(params: {
 - 便便次數：本期平均 ${poop.currentAvg.toFixed(1)} 次/天 ${formatChange(poop.changePercent)}
 - 尿尿次數：本期平均 ${pee.currentAvg.toFixed(1)} 次/天 ${formatChange(pee.changePercent)}
 ${weightSection}
+${calorieSection}
 `;
 }
 
@@ -116,12 +229,14 @@ export async function POST(req: NextRequest) {
   const rangeDays = body.rangeDays && body.rangeDays > 0 ? body.rangeDays : 7;
 
   try {
-    const [food, water, poop, pee, weightTrend] = await Promise.all([
+    const [food, water, poop, pee, weightTrend, calorieIntake, kcalNeed] = await Promise.all([
       fetchReportSeries("food", rangeDays, endDateKey),
       fetchReportSeries("water", rangeDays, endDateKey),
       fetchReportSeries("poop", rangeDays, endDateKey),
       fetchReportSeries("pee", rangeDays, endDateKey),
       fetchWeightTrend(rangeDays, endDateKey),
+      fetchFoodCalorieIntake(rangeDays, endDateKey),
+      fetchDailyKcalNeed(endDateKey),
     ]);
 
     const hasAnyData =
@@ -132,12 +247,27 @@ export async function POST(req: NextRequest) {
       weightTrend.latest !== null;
 
     if (!hasAnyData) {
-      return NextResponse.json({
-        analysis: "這段期間還沒有足夠的紀錄可以分析，多記錄幾天之後再試試看吧！",
+      const analysis = "這段期間還沒有足夠的紀錄可以分析，多記錄幾天之後再試試看吧！";
+      await setCachedAnalysis({
+        rangeDays,
+        endDateKey,
+        analysis,
+        generatedAt: new Date().toISOString(),
       });
+      return NextResponse.json({ analysis });
     }
 
-    const prompt = buildPrompt({ rangeDays, endDateKey, food, water, poop, pee, weightTrend });
+    const prompt = buildPrompt({
+      rangeDays,
+      endDateKey,
+      food,
+      water,
+      poop,
+      pee,
+      weightTrend,
+      calorieIntake,
+      kcalNeed,
+    });
 
     const geminiRes = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
@@ -156,13 +286,21 @@ export async function POST(req: NextRequest) {
     }
 
     const geminiData = await geminiRes.json();
-    const analysis: string | undefined = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const analysisRaw: string | undefined = geminiData?.candidates?.[0]?.content?.parts?.[0]?.text;
 
-    if (!analysis) {
+    if (!analysisRaw) {
       return NextResponse.json({ error: "AI 沒有回傳分析內容，請稍後再試" }, { status: 502 });
     }
 
-    return NextResponse.json({ analysis: analysis.trim() });
+    const analysis = analysisRaw.trim();
+    await setCachedAnalysis({
+      rangeDays,
+      endDateKey,
+      analysis,
+      generatedAt: new Date().toISOString(),
+    });
+
+    return NextResponse.json({ analysis });
   } catch (err) {
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }

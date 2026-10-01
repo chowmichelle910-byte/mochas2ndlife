@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { getCachedAnalysis } from "@/lib/aiAnalysisCache";
+import { formatDisplayDate } from "@/lib/date";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 export default function AIAnalysisCard({
   rangeDays,
@@ -9,9 +12,26 @@ export default function AIAnalysisCard({
   rangeDays: number;
   endDateKey: string;
 }) {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [analysis, setAnalysis] = useState<string | null>(null);
+  const [generatedAt, setGeneratedAt] = useState<string | null>(null);
+  const [cachedEndDateKey, setCachedEndDateKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const visibilityKey = useVisibilityRefresh();
+
+  const loadCached = useCallback(async () => {
+    const cached = await getCachedAnalysis();
+    if (cached) {
+      setAnalysis(cached.analysis);
+      setGeneratedAt(cached.generatedAt);
+      setCachedEndDateKey(cached.endDateKey);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    loadCached();
+  }, [loadCached, visibilityKey]);
 
   async function handleAnalyze() {
     setLoading(true);
@@ -28,12 +48,23 @@ export default function AIAnalysisCard({
         return;
       }
       setAnalysis(data.analysis);
+      setGeneratedAt(new Date().toISOString());
+      setCachedEndDateKey(endDateKey);
     } catch {
       setError("分析失敗，請稍後再試");
     } finally {
       setLoading(false);
     }
   }
+
+  const generatedAtLabel = generatedAt
+    ? new Date(generatedAt).toLocaleString("zh-TW", {
+        month: "numeric",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
 
   return (
     <div className="rounded-3xl bg-white p-4 shadow-sm">
@@ -46,11 +77,18 @@ export default function AIAnalysisCard({
           type="button"
           onClick={handleAnalyze}
           disabled={loading}
+          aria-label="重新整理 AI 分析"
           className="rounded-full bg-orange-100 px-3 py-1.5 text-sm font-medium text-orange-600 transition hover:bg-orange-200 disabled:opacity-50"
         >
-          {loading ? "分析中..." : analysis ? "重新分析" : "開始分析"}
+          {loading ? "分析中..." : "重新整理"}
         </button>
       </div>
+
+      {generatedAtLabel && cachedEndDateKey && !error && (
+        <p className="mt-2 text-xs text-stone-400">
+          上次分析時間：{generatedAtLabel}（期間到 {formatDisplayDate(cachedEndDateKey)} 為止）
+        </p>
+      )}
 
       {error && <div className="mt-3 text-sm text-red-500">發生錯誤：{error}</div>}
 
@@ -62,7 +100,7 @@ export default function AIAnalysisCard({
 
       {!analysis && !error && !loading && (
         <p className="mt-3 text-sm text-stone-400">
-          按「開始分析」，AI 會根據這段期間的食物、飲水、體重、如廁紀錄，幫你看看有沒有值得注意的趨勢。
+          按「重新整理」，AI 會根據這段期間的食物、飲水、體重、如廁、卡路里紀錄，幫你看看有沒有值得注意的趨勢。分析結果會記住，下次打開不用重新問一次。
         </p>
       )}
     </div>
