@@ -5,7 +5,7 @@ import { fetchReportSeries, ReportSeries } from "@/lib/reports";
 import { ageInYears, estimateDailyKcalNeed, getCatBirthdate } from "@/lib/catProfile";
 import { setCachedAnalysis } from "@/lib/aiAnalysisCache";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 interface WeightPoint {
   amount: number;
@@ -212,6 +212,39 @@ ${calorieSection}
 `;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
+
+async function callGeminiWithRetry(apiKey: string, prompt: string): Promise<Response> {
+  const maxAttempts = 3;
+  let lastRes: Response | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+        }),
+      }
+    );
+
+    if (res.ok || !RETRYABLE_STATUS.has(res.status) || attempt === maxAttempts) {
+      return res;
+    }
+
+    lastRes = res;
+    await sleep(1500 * attempt);
+  }
+
+  return lastRes!;
+}
+
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -269,20 +302,14 @@ export async function POST(req: NextRequest) {
       kcalNeed,
     });
 
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${apiKey}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-        }),
-      }
-    );
+    const geminiRes = await callGeminiWithRetry(apiKey, prompt);
 
     if (!geminiRes.ok) {
       const errText = await geminiRes.text();
-      return NextResponse.json({ error: `AI 服務錯誤：${errText}` }, { status: 502 });
+      const friendlyError = RETRYABLE_STATUS.has(geminiRes.status)
+        ? "AI 服務目前請求量較大，已經自動重試了幾次還是失敗，請稍後再按一次「重新整理」"
+        : `AI 服務錯誤：${errText}`;
+      return NextResponse.json({ error: friendlyError }, { status: 502 });
     }
 
     const geminiData = await geminiRes.json();
