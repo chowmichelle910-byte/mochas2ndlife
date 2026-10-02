@@ -10,4 +10,5 @@ body {
 body {
   background-color: #fdf8f3;
   color: #3f2d20;
+  overflow-x: hidden;
 }
