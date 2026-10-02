@@ -3,6 +3,19 @@
 import { formatTime } from "@/lib/date";
 import { ENTRY_META, Entry } from "@/lib/types";
 
+function wasEdited(entry: Entry): boolean {
+  return new Date(entry.updated_at).getTime() - new Date(entry.created_at).getTime() > 2000;
+}
+
+function formatEditedAt(iso: string): string {
+  return new Date(iso).toLocaleString("zh-TW", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function EntryList({
   entries,
   onDelete,
@@ -53,6 +66,11 @@ export default function EntryList({
               </div>
               {entry.note && (
                 <div className="text-xs text-stone-500">{entry.note}</div>
+              )}
+              {wasEdited(entry) && (
+                <div className="text-xs text-stone-400">
+                  最後修改：{formatEditedAt(entry.updated_at)}
+                </div>
               )}
             </div>
             <span className="text-xs text-stone-400">{formatTime(entry.occurred_at)}</span>

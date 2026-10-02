@@ -10,6 +10,23 @@ create table if not exists entries (
   created_at timestamptz not null default now()
 );
 
+-- 記錄「最後修改時間」，方便之後追查某筆紀錄是什麼時候被改過（新增時等於 created_at，之後每次 UPDATE 會自動更新）
+alter table entries add column if not exists updated_at timestamptz not null default now();
+
+create or replace function set_entries_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists entries_set_updated_at on entries;
+create trigger entries_set_updated_at
+  before update on entries
+  for each row
+  execute function set_entries_updated_at();
+
 -- 如果資料表是舊版建立的（缺少較新的 type），把限制條件更新成最新版本。
 alter table entries drop constraint if exists entries_type_check;
 alter table entries add constraint entries_type_check
