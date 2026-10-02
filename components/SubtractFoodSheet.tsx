@@ -31,7 +31,7 @@ export default function SubtractFoodSheet({
     setError(null);
     try {
       const newAmount = Math.max(0, (selected.amount ?? 0) - leftoverAmount);
-      const newNote = `${(selected.note ?? "").trim()} (已扣除${leftoverAmount}g)`.trim();
+      const newNote = `${(selected.note ?? "").trim()} (已剩下${leftoverAmount}g)`.trim();
       const { error: updateError } = await supabase
         .from("entries")
         .update({ amount: newAmount, note: newNote })
@@ -41,7 +41,7 @@ export default function SubtractFoodSheet({
       onClose();
     } catch (err) {
       console.error("subtract food failed", err);
-      setError("扣除失敗，請稍後再試");
+      setError("儲存失敗，請稍後再試");
     } finally {
       setSubmitting(false);
     }
@@ -58,7 +58,7 @@ export default function SubtractFoodSheet({
         className="flex w-full flex-col gap-4 rounded-t-3xl bg-white p-5 pb-6 sm:max-w-sm sm:rounded-3xl"
       >
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-stone-800">🍚 扣除食物剩量</h2>
+          <h2 className="text-lg font-semibold text-stone-800">🍚 食物剩下多少</h2>
           <button
             type="button"
             onClick={onClose}
@@ -124,7 +124,7 @@ export default function SubtractFoodSheet({
           disabled={submitting || !canSubmit}
           className="rounded-xl bg-stone-500 py-2.5 font-medium text-white transition hover:bg-stone-600 disabled:opacity-50"
         >
-          {submitting ? "處理中..." : "扣除"}
+          {submitting ? "處理中..." : "剩下"}
         </button>
       </form>
     </div>

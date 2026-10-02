@@ -50,7 +50,7 @@ export default function TodayGrid({
               {type === "food" && (
                 <button
                   type="button"
-                  aria-label="扣除食物剩量"
+                  aria-label="食物剩下多少"
                   onClick={onSubtractFood}
                   className="absolute bottom-3 right-14 flex h-9 w-9 items-center justify-center rounded-full bg-stone-100 text-xl font-semibold text-stone-500 transition hover:bg-stone-200"
                 >
