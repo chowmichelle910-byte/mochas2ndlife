@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatTime } from "@/lib/date";
 import { ENTRY_META, Entry } from "@/lib/types";
+import { FoodType, kcalForFoodEntry, listFoodTypes } from "@/lib/foodBrands";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 function wasEdited(entry: Entry): boolean {
   return new Date(entry.updated_at).getTime() - new Date(entry.created_at).getTime() > 2000;
@@ -25,6 +28,13 @@ export default function EntryList({
   onDelete: (id: string) => void;
   onEdit: (entry: Entry) => void;
 }) {
+  const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
+  const visibilityKey = useVisibilityRefresh();
+
+  useEffect(() => {
+    listFoodTypes().then(setFoodTypes);
+  }, [visibilityKey]);
+
   if (entries.length === 0) {
     return (
       <div className="rounded-3xl bg-white p-6 text-center text-sm text-stone-400 shadow-sm">
@@ -41,6 +51,7 @@ export default function EntryList({
     <ul className="flex flex-col gap-2">
       {sorted.map((entry) => {
         const meta = ENTRY_META[entry.type];
+        const kcal = entry.type === "food" ? kcalForFoodEntry(entry, foodTypes) : null;
         return (
           <li
             key={entry.id}
@@ -64,6 +75,11 @@ export default function EntryList({
                   </span>
                 )}
               </div>
+              {entry.type === "food" && (
+                <div className="text-xs text-stone-400">
+                  {kcal !== null ? `${Math.round(kcal)} kcal` : "未設定卡路里"}
+                </div>
+              )}
               {entry.note && (
                 <div className="text-xs text-stone-500">{entry.note}</div>
               )}

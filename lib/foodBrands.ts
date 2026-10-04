@@ -54,6 +54,23 @@ export interface FoodKcalSummary {
   hasUnknown: boolean;
 }
 
+export function kcalForFoodEntry(
+  entry: { note: string | null; amount: number | null },
+  foodTypes: FoodType[] | Map<string, FoodType>
+): number | null {
+  const byName = foodTypes instanceof Map ? foodTypes : new Map(foodTypes.map((f) => [f.name, f]));
+  const amount = entry.amount ?? 0;
+  const ft = entry.note ? byName.get(entry.note) : undefined;
+
+  if (ft?.calorie_mode === "per100g" && ft.kcal_per_100g != null) {
+    return (amount / 100) * ft.kcal_per_100g;
+  }
+  if (ft?.calorie_mode === "percan" && ft.kcal_per_can != null && ft.grams_per_can) {
+    return (amount / ft.grams_per_can) * ft.kcal_per_can;
+  }
+  return null;
+}
+
 export function calculateFoodKcal(
   entries: { note: string | null; amount: number | null }[],
   foodTypes: FoodType[]
@@ -63,15 +80,12 @@ export function calculateFoodKcal(
   let hasUnknown = false;
 
   for (const entry of entries) {
-    const amount = entry.amount ?? 0;
-    if (amount <= 0) continue;
-    const ft = entry.note ? byName.get(entry.note) : undefined;
-    if (ft?.calorie_mode === "per100g" && ft.kcal_per_100g != null) {
-      kcal += (amount / 100) * ft.kcal_per_100g;
-    } else if (ft?.calorie_mode === "percan" && ft.kcal_per_can != null && ft.grams_per_can) {
-      kcal += (amount / ft.grams_per_can) * ft.kcal_per_can;
-    } else {
+    if ((entry.amount ?? 0) <= 0) continue;
+    const entryKcal = kcalForFoodEntry(entry, byName);
+    if (entryKcal === null) {
       hasUnknown = true;
+    } else {
+      kcal += entryKcal;
     }
   }
 
