@@ -1,10 +1,13 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { ENTRY_META, Entry, EntryType } from "@/lib/types";
+import { calculateFoodKcal, FoodKcalSummary, FoodType, listFoodTypes } from "@/lib/foodBrands";
+import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
 
 const TYPES: EntryType[] = ["food", "water", "poop", "pee"];
 
-function summaryFor(entries: Entry[], type: EntryType): string {
+function summaryFor(entries: Entry[], type: EntryType, kcalInfo?: FoodKcalSummary): string {
   const matches = entries.filter((e) => e.type === type);
   if (matches.length === 0) return "-";
 
@@ -17,7 +20,11 @@ function summaryFor(entries: Entry[], type: EntryType): string {
   const total = matches.reduce((sum, e) => sum + (e.amount ?? 0), 0);
   if (type === "food") {
     const feedCount = matches.filter((e) => (e.amount ?? 0) > 0).length;
-    return `${total} ${meta.unit} · ${feedCount} 次`;
+    let summary = `${total} ${meta.unit} · ${feedCount} 次`;
+    if (kcalInfo && kcalInfo.kcal > 0) {
+      summary += ` · ${kcalInfo.hasUnknown ? "約" : ""}${Math.round(kcalInfo.kcal)} kcal`;
+    }
+    return summary;
   }
 
   return `${total} ${meta.unit} · ${matches.length} 次`;
@@ -34,6 +41,18 @@ export default function TodayGrid({
   onSubtractFood: () => void;
   onMeasureWater: () => void;
 }) {
+  const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
+  const visibilityKey = useVisibilityRefresh();
+
+  useEffect(() => {
+    listFoodTypes().then(setFoodTypes);
+  }, [visibilityKey]);
+
+  const foodKcal = calculateFoodKcal(
+    entries.filter((e) => e.type === "food"),
+    foodTypes
+  );
+
   return (
     <div>
       <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">今日紀錄</h2>
@@ -46,7 +65,9 @@ export default function TodayGrid({
                 <span className="text-xl">{meta.emoji}</span>
                 <span className="font-medium">{meta.label}</span>
               </div>
-              <div className="mt-2 text-sm text-stone-400">{summaryFor(entries, type)}</div>
+              <div className="mt-2 text-sm text-stone-400">
+                {summaryFor(entries, type, type === "food" ? foodKcal : undefined)}
+              </div>
               {type === "food" && (
                 <button
                   type="button"
