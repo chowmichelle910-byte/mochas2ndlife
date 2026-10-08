@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { getCachedAnalysis } from "@/lib/aiAnalysisCache";
 import { formatDisplayDate } from "@/lib/date";
 import { useVisibilityRefresh } from "@/lib/useVisibilityRefresh";
@@ -18,9 +18,12 @@ export default function AIAnalysisCard({
   const [cachedEndDateKey, setCachedEndDateKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const visibilityKey = useVisibilityRefresh();
+  const refreshingRef = useRef(false);
 
   const loadCached = useCallback(async () => {
+    if (refreshingRef.current) return;
     const cached = await getCachedAnalysis();
+    if (refreshingRef.current) return;
     if (cached) {
       setAnalysis(cached.analysis);
       setGeneratedAt(cached.generatedAt);
@@ -34,6 +37,7 @@ export default function AIAnalysisCard({
   }, [loadCached, visibilityKey]);
 
   async function handleAnalyze() {
+    refreshingRef.current = true;
     setLoading(true);
     setError(null);
     try {
@@ -53,6 +57,7 @@ export default function AIAnalysisCard({
     } catch {
       setError("分析失敗，請稍後再試");
     } finally {
+      refreshingRef.current = false;
       setLoading(false);
     }
   }
