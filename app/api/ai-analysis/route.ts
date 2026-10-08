@@ -4,6 +4,7 @@ import { addDays, dateKeyToRange, toDateKey } from "@/lib/date";
 import { fetchReportSeries, ReportSeries } from "@/lib/reports";
 import { ageInYears, estimateDailyKcalNeed, getCatBirthdate } from "@/lib/catProfile";
 import { setCachedAnalysis } from "@/lib/aiAnalysisCache";
+import { FoodType, kcalForFoodEntry } from "@/lib/foodBrands";
 
 export const maxDuration = 60;
 
@@ -78,20 +79,15 @@ async function fetchFoodCalorieIntake(
   if (entriesError) throw entriesError;
   if (foodTypesError) throw foodTypesError;
 
-  const byName = new Map((foodTypes ?? []).map((f) => [f.name as string, f]));
+  const byName = new Map((foodTypes ?? []).map((f) => [f.name as string, f as FoodType]));
   const byDay = new Map<string, number>();
   let hasUnknownFoodTypes = false;
 
   for (const row of entries ?? []) {
     const amount = (row.amount as number | null) ?? 0;
     if (amount <= 0) continue;
-    const ft = row.note ? byName.get(row.note as string) : undefined;
-    let kcal = 0;
-    if (ft?.calorie_mode === "per100g" && ft.kcal_per_100g != null) {
-      kcal = (amount / 100) * ft.kcal_per_100g;
-    } else if (ft?.calorie_mode === "percan" && ft.kcal_per_can != null && ft.grams_per_can) {
-      kcal = (amount / ft.grams_per_can) * ft.kcal_per_can;
-    } else {
+    const kcal = kcalForFoodEntry({ note: row.note as string | null, amount }, byName);
+    if (kcal === null) {
       hasUnknownFoodTypes = true;
       continue;
     }

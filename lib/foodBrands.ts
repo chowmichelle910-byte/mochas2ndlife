@@ -54,13 +54,20 @@ export interface FoodKcalSummary {
   hasUnknown: boolean;
 }
 
+// 扣除食物剩量會在備註後面加上「(已剩下Xg)」（舊版叫「(已扣除Xg)」），
+// 比對卡路里設定時要先把這段拿掉，不然會對不上原本設定好的食物種類名稱。
+export function stripSubtractionNote(note: string): string {
+  return note.replace(/\s*\(已(剩下|扣除)[\d.]+g\)/g, "").trim();
+}
+
 export function kcalForFoodEntry(
   entry: { note: string | null; amount: number | null },
   foodTypes: FoodType[] | Map<string, FoodType>
 ): number | null {
   const byName = foodTypes instanceof Map ? foodTypes : new Map(foodTypes.map((f) => [f.name, f]));
   const amount = entry.amount ?? 0;
-  const ft = entry.note ? byName.get(entry.note) : undefined;
+  const baseName = entry.note ? stripSubtractionNote(entry.note) : null;
+  const ft = baseName ? byName.get(baseName) : undefined;
 
   if (ft?.calorie_mode === "per100g" && ft.kcal_per_100g != null) {
     return (amount / 100) * ft.kcal_per_100g;
