@@ -1,15 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CalorieMode, FoodType, listFoodTypes, upsertFoodType } from "@/lib/foodBrands";
+import { CalorieMode, DEFAULT_MOISTURE_PERCENT, FoodType, listFoodTypes, upsertFoodType } from "@/lib/foodBrands";
 
-const EMPTY_NEW = { name: "", calorie_mode: "per100g" as CalorieMode, kcal_per_100g: "", kcal_per_can: "", grams_per_can: "" };
+const EMPTY_NEW = {
+  name: "",
+  calorie_mode: "per100g" as CalorieMode,
+  kcal_per_100g: "",
+  kcal_per_can: "",
+  grams_per_can: "",
+  moisture_percent: "",
+};
 
 function Row({ item, onSaved }: { item: FoodType; onSaved: (updated: FoodType) => void }) {
   const [mode, setMode] = useState<CalorieMode>(item.calorie_mode ?? "per100g");
   const [kcalPer100g, setKcalPer100g] = useState(item.kcal_per_100g?.toString() ?? "");
   const [kcalPerCan, setKcalPerCan] = useState(item.kcal_per_can?.toString() ?? "");
   const [gramsPerCan, setGramsPerCan] = useState(item.grams_per_can?.toString() ?? "");
+  const [moisturePercent, setMoisturePercent] = useState(item.moisture_percent?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,6 +32,7 @@ function Row({ item, onSaved }: { item: FoodType; onSaved: (updated: FoodType) =
         kcal_per_100g: mode === "per100g" && kcalPer100g !== "" ? Number(kcalPer100g) : null,
         kcal_per_can: mode === "percan" && kcalPerCan !== "" ? Number(kcalPerCan) : null,
         grams_per_can: mode === "percan" && gramsPerCan !== "" ? Number(gramsPerCan) : null,
+        moisture_percent: moisturePercent !== "" ? Number(moisturePercent) : null,
       };
       await upsertFoodType(updated);
       onSaved(updated);
@@ -104,6 +113,20 @@ function Row({ item, onSaved }: { item: FoodType; onSaved: (updated: FoodType) =
         </div>
       )}
 
+      <label className="flex flex-col text-sm text-stone-600">
+        含水量%（選填，留空預設 {DEFAULT_MOISTURE_PERCENT[mode]}%）
+        <input
+          type="number"
+          min={0}
+          max={100}
+          inputMode="decimal"
+          value={moisturePercent}
+          onChange={(e) => setMoisturePercent(e.target.value)}
+          className="mt-1 w-full min-w-0 rounded-lg border border-stone-200 px-3 py-1.5 text-base focus:border-orange-400 focus:outline-none"
+          placeholder={`${DEFAULT_MOISTURE_PERCENT[mode]}`}
+        />
+      </label>
+
       <button
         type="button"
         onClick={handleSave}
@@ -147,6 +170,7 @@ export default function FoodCalorieSettings() {
         kcal_per_100g: newItem.calorie_mode === "per100g" && newItem.kcal_per_100g !== "" ? Number(newItem.kcal_per_100g) : null,
         kcal_per_can: newItem.calorie_mode === "percan" && newItem.kcal_per_can !== "" ? Number(newItem.kcal_per_can) : null,
         grams_per_can: newItem.calorie_mode === "percan" && newItem.grams_per_can !== "" ? Number(newItem.grams_per_can) : null,
+        moisture_percent: newItem.moisture_percent !== "" ? Number(newItem.moisture_percent) : null,
       });
       const refreshed = await listFoodTypes();
       setItems(refreshed);
@@ -237,6 +261,16 @@ export default function FoodCalorieSettings() {
               />
             </div>
           )}
+          <input
+            type="number"
+            min={0}
+            max={100}
+            inputMode="decimal"
+            value={newItem.moisture_percent}
+            onChange={(e) => setNewItem((v) => ({ ...v, moisture_percent: e.target.value }))}
+            placeholder={`含水量%（選填，留空預設 ${DEFAULT_MOISTURE_PERCENT[newItem.calorie_mode]}%）`}
+            className="w-full min-w-0 rounded-lg border border-stone-200 px-3 py-1.5 text-base focus:border-orange-400 focus:outline-none"
+          />
           <div className="flex gap-2">
             <button
               type="button"

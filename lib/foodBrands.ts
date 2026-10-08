@@ -9,6 +9,7 @@ export interface FoodType {
   kcal_per_100g: number | null;
   kcal_per_can: number | null;
   grams_per_can: number | null;
+  moisture_percent: number | null;
 }
 
 export async function getCustomFoodBrands(): Promise<string[]> {
@@ -29,7 +30,7 @@ export async function addFoodBrand(name: string): Promise<void> {
 export async function listFoodTypes(): Promise<FoodType[]> {
   const { data, error } = await supabase
     .from("food_brands")
-    .select("id, name, calorie_mode, kcal_per_100g, kcal_per_can, grams_per_can")
+    .select("id, name, calorie_mode, kcal_per_100g, kcal_per_can, grams_per_can, moisture_percent")
     .order("created_at", { ascending: true });
 
   if (error || !data) return [];
@@ -42,6 +43,7 @@ export async function upsertFoodType(input: {
   kcal_per_100g: number | null;
   kcal_per_can: number | null;
   grams_per_can: number | null;
+  moisture_percent: number | null;
 }): Promise<void> {
   const { error } = await supabase
     .from("food_brands")
@@ -97,4 +99,50 @@ export function calculateFoodKcal(
   }
 
   return { kcal, hasUnknown };
+}
+
+// 沒有另外設定含水量時用的預設值：罐頭/濕糧水分通常佔 7-8 成，乾糧大約一成。
+export const DEFAULT_MOISTURE_PERCENT: Record<CalorieMode, number> = {
+  percan: 78,
+  per100g: 10,
+};
+
+export interface FoodMoistureSummary {
+  ml: number;
+  hasUnknown: boolean;
+}
+
+export function waterMlForFoodEntry(
+  entry: { note: string | null; amount: number | null },
+  foodTypes: FoodType[] | Map<string, FoodType>
+): number | null {
+  const byName = foodTypes instanceof Map ? foodTypes : new Map(foodTypes.map((f) => [f.name, f]));
+  const amount = entry.amount ?? 0;
+  const baseName = entry.note ? stripSubtractionNote(entry.note) : null;
+  const ft = baseName ? byName.get(baseName) : undefined;
+
+  if (!ft?.calorie_mode) return null;
+  const moisturePercent = ft.moisture_percent ?? DEFAULT_MOISTURE_PERCENT[ft.calorie_mode];
+  return amount * (moisturePercent / 100);
+}
+
+export function calculateFoodMoisture(
+  entries: { note: string | null; amount: number | null }[],
+  foodTypes: FoodType[]
+): FoodMoistureSummary {
+  const byName = new Map(foodTypes.map((f) => [f.name, f]));
+  let ml = 0;
+  let hasUnknown = false;
+
+  for (const entry of entries) {
+    if ((entry.amount ?? 0) <= 0) continue;
+    const entryMl = waterMlForFoodEntry(entry, byName);
+    if (entryMl === null) {
+      hasUnknown = true;
+    } else {
+      ml += entryMl;
+    }
+  }
+
+  return { ml, hasUnknown };
 }

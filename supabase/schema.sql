@@ -122,6 +122,10 @@ alter table food_brands add column if not exists kcal_per_100g numeric;
 alter table food_brands add column if not exists kcal_per_can numeric;
 alter table food_brands add column if not exists grams_per_can numeric;
 
+-- 含水量百分比，給 AI 分析估算「食物裡的水分」用（例如罐頭通常 7-8 成是水）。
+-- 留空的話，AI 分析會自動用預設值估算（罐裝約 78%、秤重約 10%），不強制使用者一定要填。
+alter table food_brands add column if not exists moisture_percent numeric check (moisture_percent >= 0 and moisture_percent <= 100);
+
 alter table food_brands enable row level security;
 
 drop policy if exists "food_brands public read" on food_brands;

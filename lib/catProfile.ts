@@ -27,3 +27,8 @@ export function estimateDailyKcalNeed(weightKg: number, ageYears: number): numbe
   const rer = 70 * Math.pow(weightKg, 0.75);
   return rer * lifeStageFactor(ageYears);
 }
+
+// 常見獸醫建議：貓咪每天（飲水 + 食物含水量加總）大約需要體重每公斤 50ml 水分。
+export function estimateDailyWaterNeedMl(weightKg: number): number {
+  return weightKg * 50;
+}

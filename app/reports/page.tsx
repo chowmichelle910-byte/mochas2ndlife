@@ -87,6 +87,12 @@ export default function ReportsPage() {
         compareLabel={effective.compareLabel}
       />
       <ReportCard
+        type="water"
+        rangeDays={effective.days}
+        endDateKey={effective.endDateKey}
+        compareLabel={effective.compareLabel}
+      />
+      <ReportCard
         type="poop"
         rangeDays={effective.days}
         endDateKey={effective.endDateKey}

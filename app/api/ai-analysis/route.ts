@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 import { addDays, dateKeyToRange, toDateKey } from "@/lib/date";
 import { fetchReportSeries, ReportSeries } from "@/lib/reports";
-import { ageInYears, estimateDailyKcalNeed, getCatBirthdate } from "@/lib/catProfile";
+import { ageInYears, estimateDailyKcalNeed, estimateDailyWaterNeedMl, getCatBirthdate } from "@/lib/catProfile";
 import { setCachedAnalysis } from "@/lib/aiAnalysisCache";
-import { FoodType, kcalForFoodEntry } from "@/lib/foodBrands";
+import { FoodType, kcalForFoodEntry, waterMlForFoodEntry } from "@/lib/foodBrands";
 
 export const maxDuration = 60;
 
@@ -50,15 +50,17 @@ async function fetchWeightTrend(rangeDays: number, endDateKey: string): Promise<
   };
 }
 
-interface FoodCalorieIntake {
+interface FoodIntakeSummary {
   avgKcalPerDay: number | null;
-  hasUnknownFoodTypes: boolean;
+  hasUnknownCalorieFoodTypes: boolean;
+  avgMoistureMlPerDay: number | null;
+  hasUnknownMoistureFoodTypes: boolean;
 }
 
-async function fetchFoodCalorieIntake(
+async function fetchFoodIntakeSummary(
   rangeDays: number,
   endDateKey: string
-): Promise<FoodCalorieIntake> {
+): Promise<FoodIntakeSummary> {
   const startCurrent = addDays(endDateKey, -(rangeDays - 1));
   const { start } = dateKeyToRange(startCurrent);
   const { end } = dateKeyToRange(endDateKey);
@@ -73,40 +75,57 @@ async function fetchFoodCalorieIntake(
         .lte("occurred_at", end),
       supabase
         .from("food_brands")
-        .select("name, calorie_mode, kcal_per_100g, kcal_per_can, grams_per_can"),
+        .select("name, calorie_mode, kcal_per_100g, kcal_per_can, grams_per_can, moisture_percent"),
     ]);
 
   if (entriesError) throw entriesError;
   if (foodTypesError) throw foodTypesError;
 
   const byName = new Map((foodTypes ?? []).map((f) => [f.name as string, f as FoodType]));
-  const byDay = new Map<string, number>();
-  let hasUnknownFoodTypes = false;
+  const kcalByDay = new Map<string, number>();
+  const moistureByDay = new Map<string, number>();
+  let hasUnknownCalorieFoodTypes = false;
+  let hasUnknownMoistureFoodTypes = false;
 
   for (const row of entries ?? []) {
     const amount = (row.amount as number | null) ?? 0;
     if (amount <= 0) continue;
-    const kcal = kcalForFoodEntry({ note: row.note as string | null, amount }, byName);
-    if (kcal === null) {
-      hasUnknownFoodTypes = true;
-      continue;
-    }
+    const entry = { note: row.note as string | null, amount };
     const key = toDateKey(new Date(row.occurred_at as string));
-    byDay.set(key, (byDay.get(key) ?? 0) + kcal);
+
+    const kcal = kcalForFoodEntry(entry, byName);
+    if (kcal === null) {
+      hasUnknownCalorieFoodTypes = true;
+    } else {
+      kcalByDay.set(key, (kcalByDay.get(key) ?? 0) + kcal);
+    }
+
+    const ml = waterMlForFoodEntry(entry, byName);
+    if (ml === null) {
+      hasUnknownMoistureFoodTypes = true;
+    } else {
+      moistureByDay.set(key, (moistureByDay.get(key) ?? 0) + ml);
+    }
   }
 
-  if (byDay.size === 0) return { avgKcalPerDay: null, hasUnknownFoodTypes };
-  const total = [...byDay.values()].reduce((a, b) => a + b, 0);
-  return { avgKcalPerDay: total / byDay.size, hasUnknownFoodTypes };
+  const avgKcalPerDay =
+    kcalByDay.size === 0 ? null : [...kcalByDay.values()].reduce((a, b) => a + b, 0) / kcalByDay.size;
+  const avgMoistureMlPerDay =
+    moistureByDay.size === 0
+      ? null
+      : [...moistureByDay.values()].reduce((a, b) => a + b, 0) / moistureByDay.size;
+
+  return { avgKcalPerDay, hasUnknownCalorieFoodTypes, avgMoistureMlPerDay, hasUnknownMoistureFoodTypes };
 }
 
-interface DailyKcalNeed {
-  need: number | null;
+interface DailyNeeds {
+  kcalNeed: number | null;
+  waterNeedMl: number | null;
   weightKg: number | null;
   ageYears: number | null;
 }
 
-async function fetchDailyKcalNeed(endDateKey: string): Promise<DailyKcalNeed> {
+async function fetchDailyNeeds(endDateKey: string): Promise<DailyNeeds> {
   const { end } = dateKeyToRange(endDateKey);
   const [birthdateKey, { data: weightRows, error: weightError }] = await Promise.all([
     getCatBirthdate(),
@@ -121,13 +140,14 @@ async function fetchDailyKcalNeed(endDateKey: string): Promise<DailyKcalNeed> {
 
   if (weightError) throw weightError;
   const weightKg = (weightRows?.[0]?.amount as number | undefined) ?? null;
+  const waterNeedMl = weightKg != null ? estimateDailyWaterNeedMl(weightKg) : null;
 
   if (!birthdateKey || weightKg == null) {
-    return { need: null, weightKg, ageYears: null };
+    return { kcalNeed: null, waterNeedMl, weightKg, ageYears: null };
   }
 
   const ageYears = ageInYears(birthdateKey, endDateKey);
-  return { need: estimateDailyKcalNeed(weightKg, ageYears), weightKg, ageYears };
+  return { kcalNeed: estimateDailyKcalNeed(weightKg, ageYears), waterNeedMl, weightKg, ageYears };
 }
 
 function formatChange(changePercent: number | null): string {
@@ -144,10 +164,10 @@ function buildPrompt(params: {
   poop: ReportSeries;
   pee: ReportSeries;
   weightTrend: WeightTrend;
-  calorieIntake: FoodCalorieIntake;
-  kcalNeed: DailyKcalNeed;
+  foodIntake: FoodIntakeSummary;
+  dailyNeeds: DailyNeeds;
 }): string {
-  const { rangeDays, endDateKey, food, water, poop, pee, weightTrend, calorieIntake, kcalNeed } =
+  const { rangeDays, endDateKey, food, water, poop, pee, weightTrend, foodIntake, dailyNeeds } =
     params;
 
   const weightLines: string[] = [];
@@ -169,10 +189,10 @@ function buildPrompt(params: {
     weightLines.length > 0 ? weightLines.join("\n") : "- 體重：這段期間沒有量體重紀錄";
 
   const calorieLines: string[] = [];
-  if (calorieIntake.avgKcalPerDay != null) {
+  if (foodIntake.avgKcalPerDay != null) {
     calorieLines.push(
-      `本期平均每日攝取卡路里：約 ${Math.round(calorieIntake.avgKcalPerDay)} kcal/天` +
-        (calorieIntake.hasUnknownFoodTypes
+      `本期平均每日攝取卡路里：約 ${Math.round(foodIntake.avgKcalPerDay)} kcal/天` +
+        (foodIntake.hasUnknownCalorieFoodTypes
           ? "（部分食物種類還沒設定卡路里，這個數字可能被低估）"
           : "")
     );
@@ -181,16 +201,41 @@ function buildPrompt(params: {
       "本期攝取卡路里：無法計算（食物紀錄的種類都還沒在設定頁設定卡路里，或這段期間沒有食物紀錄）"
     );
   }
-  if (kcalNeed.need != null) {
+  if (dailyNeeds.kcalNeed != null) {
     calorieLines.push(
-      `估計每日所需卡路里：約 ${Math.round(kcalNeed.need)} kcal/天（根據體重 ${kcalNeed.weightKg}kg、年齡約 ${kcalNeed.ageYears?.toFixed(1)} 歲估算，是概略值，不是精確醫療數字）`
+      `估計每日所需卡路里：約 ${Math.round(dailyNeeds.kcalNeed)} kcal/天（根據體重 ${dailyNeeds.weightKg}kg、年齡約 ${dailyNeeds.ageYears?.toFixed(1)} 歲估算，是概略值，不是精確醫療數字）`
     );
   } else {
     calorieLines.push("估計每日所需卡路里：無法計算（尚未在設定頁填寫生日，或還沒有體重紀錄）");
   }
   const calorieSection = calorieLines.join("\n");
 
-  return `你是一位親切的貓咪照護助理。以下是我家貓咪 Mocha 最近 ${rangeDays} 天（到 ${endDateKey} 為止）的健康紀錄數據，請用繁體中文寫一段簡短分析（約 150-250 字），說明食物、飲水、體重、如廁狀況、卡路里攝取量跟所需量彼此之間可能有什麼關聯（例如攝取的卡路里是否超過或低於所需量、這是否能解釋體重變化），並指出有沒有需要留意的地方。
+  const waterLines: string[] = [
+    `本期平均每日直接飲水：約 ${water.currentAvg.toFixed(0)} ml/天 ${formatChange(water.changePercent)}`,
+  ];
+  if (foodIntake.avgMoistureMlPerDay != null) {
+    waterLines.push(
+      `本期平均每日食物含水量（估算，罐頭沒特別設定含水量的話用常見比例 78% 估）：約 ${Math.round(foodIntake.avgMoistureMlPerDay)} ml/天` +
+        (foodIntake.hasUnknownMoistureFoodTypes
+          ? "（部分食物種類不確定是濕糧還是乾糧，這個數字可能被低估）"
+          : "")
+    );
+    waterLines.push(
+      `本期平均每日總水分攝取（直接飲水 + 食物含水量）：約 ${Math.round(water.currentAvg + foodIntake.avgMoistureMlPerDay)} ml/天`
+    );
+  } else {
+    waterLines.push("本期食物含水量：無法估算（這段期間沒有食物紀錄，或食物種類都還沒設定）");
+  }
+  if (dailyNeeds.waterNeedMl != null) {
+    waterLines.push(
+      `估計每日所需水分：約 ${Math.round(dailyNeeds.waterNeedMl)} ml/天（根據體重 ${dailyNeeds.weightKg}kg 估算，是概略值，不是精確醫療數字）`
+    );
+  } else {
+    waterLines.push("估計每日所需水分：無法計算（還沒有體重紀錄）");
+  }
+  const waterSection = waterLines.join("\n");
+
+  return `你是一位親切的貓咪照護助理。以下是我家貓咪 Mocha 最近 ${rangeDays} 天（到 ${endDateKey} 為止）的健康紀錄數據，請用繁體中文寫一段簡短分析（約 150-250 字），說明食物、飲水、體重、如廁狀況、卡路里攝取量跟所需量、水分攝取量跟所需量彼此之間可能有什麼關聯（例如攝取的卡路里/水分是否超過或低於所需量、這是否能解釋體重變化或如廁狀況，水分攝取是否足夠），並指出有沒有需要留意的地方。
 
 規則：
 - 只根據下面提供的數據做推論，不要編造沒有的數字
@@ -200,11 +245,11 @@ function buildPrompt(params: {
 
 數據：
 - 食物：本期平均 ${food.currentAvg.toFixed(1)} g/天 ${formatChange(food.changePercent)}
-- 飲水：本期平均 ${water.currentAvg.toFixed(1)} ml/天 ${formatChange(water.changePercent)}
 - 便便次數：本期平均 ${poop.currentAvg.toFixed(1)} 次/天 ${formatChange(poop.changePercent)}
 - 尿尿次數：本期平均 ${pee.currentAvg.toFixed(1)} 次/天 ${formatChange(pee.changePercent)}
 ${weightSection}
 ${calorieSection}
+${waterSection}
 `;
 }
 
@@ -258,14 +303,14 @@ export async function POST(req: NextRequest) {
   const rangeDays = body.rangeDays && body.rangeDays > 0 ? body.rangeDays : 7;
 
   try {
-    const [food, water, poop, pee, weightTrend, calorieIntake, kcalNeed] = await Promise.all([
+    const [food, water, poop, pee, weightTrend, foodIntake, dailyNeeds] = await Promise.all([
       fetchReportSeries("food", rangeDays, endDateKey),
       fetchReportSeries("water", rangeDays, endDateKey),
       fetchReportSeries("poop", rangeDays, endDateKey),
       fetchReportSeries("pee", rangeDays, endDateKey),
       fetchWeightTrend(rangeDays, endDateKey),
-      fetchFoodCalorieIntake(rangeDays, endDateKey),
-      fetchDailyKcalNeed(endDateKey),
+      fetchFoodIntakeSummary(rangeDays, endDateKey),
+      fetchDailyNeeds(endDateKey),
     ]);
 
     const hasAnyData =
@@ -294,8 +339,8 @@ export async function POST(req: NextRequest) {
       poop,
       pee,
       weightTrend,
-      calorieIntake,
-      kcalNeed,
+      foodIntake,
+      dailyNeeds,
     });
 
     const geminiRes = await callGeminiWithRetry(apiKey, prompt);
